@@ -12,10 +12,10 @@
 3. Select the **“Build macOS Installer ISO image”** workflow.
 4. Click the **“Run workflow”** button.
 5. Set the inputs:
-
    * **macOS version** – Choose a version (*Sequoia*, *Sonoma*, etc.).
    * **Specific version** *(optional)* – Enter a version like `15.7.1`, or leave blank to use the latest.
-6. Click **“Run workflow”** again to start the build.
+
+6. Click the green **“Run workflow”** button to start the build.
 
 ## 📥 Downloading the ISO
 
