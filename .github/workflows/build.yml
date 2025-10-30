@@ -139,7 +139,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-ISO
-		  compression-level: 0
+          compression-level: 0
           path: *.iso
 
       - name: Summary
