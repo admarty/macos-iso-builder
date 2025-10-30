@@ -26,6 +26,9 @@ After the workflow finishes:
 3. Download the ISO artifact (e.g. `macOS-Sequoia-15.7.1-ISO`).
 4. Extract the ZIP file to get the `.iso`.
 
+> [!Note]
+> By default, the artifact is kept for 3 days. You can change this in the workflow YAML file.
+
 > [!Tip]
 >
 > * For best performance, use a macOS VM on **Proxmox VE** with iGPU or dGPU passthrough.

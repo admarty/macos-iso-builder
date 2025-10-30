@@ -153,7 +153,7 @@ jobs:
           name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-ISO
           path: "*.iso"
           compression-level: 0
-          retention-days: 1
+          retention-days: 3
 
       - name: Summary
         run: |
