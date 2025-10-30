@@ -1,0 +1,155 @@
+name: Build macOS Installer ISO image
+
+on:
+  workflow_dispatch:
+    inputs:
+      macos_version:
+        description: 'Select a macOS version to build'
+        required: true
+        type: choice
+        options:
+          - 'Tahoe'
+          - 'Sequoia'
+          - 'Sonoma'
+          - 'Ventura'
+          - 'Monterey'
+          - 'Big Sur'
+          - 'Catalina'
+          - 'Mojave'
+          - 'High Sierra'
+      specific_version:
+        description: 'Specific version number (optional, e.g., 15.0.1)'
+        required: false
+        type: string
+
+jobs:
+  build-iso:
+    runs-on: macos-15-intel
+    timeout-minutes: 120
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: System Information
+        run: |
+          echo "Runner OS: $(sw_vers -productName) $(sw_vers -productVersion)"
+          echo "Architecture: $(uname -m)"
+          echo "Available disk space:"
+          df -h
+          echo "Memory:"
+          top -l 1 | grep PhysMem
+
+      - name: Fetch available macOS installers
+        id: fetch_installers
+        run: |
+          echo "Fetching available installers..."
+          softwareupdate --list-full-installers 2>/dev/null | grep "* Title:" | sed 's/^[[:space:]]*//' > installers.txt
+          cat installers.txt
+          
+          # Parse and find matching installer
+          if [ -n "${{ github.event.inputs.specific_version }}" ]; then
+            INSTALLER_VERSION="${{ github.event.inputs.specific_version }}"
+            echo "Looking for specific version: $INSTALLER_VERSION"
+          else
+            # Get latest version for selected macOS
+            INSTALLER_VERSION=$(grep "${{ github.event.inputs.macos_version }}" installers.txt | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
+            echo "Found latest version: $INSTALLER_VERSION"
+          fi
+          
+          if [ -z "$INSTALLER_VERSION" ]; then
+            echo "Error: Could not find installer version"
+            exit 1
+          fi
+          
+          echo "version=$INSTALLER_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download macOS installer
+        run: |
+          echo "Downloading macOS ${{ github.event.inputs.macos_version }} version ${{ steps.fetch_installers.outputs.version }}"
+          
+          # Download with retries
+          MAX_RETRIES=3
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if softwareupdate --fetch-full-installer --full-installer-version "${{ steps.fetch_installers.outputs.version }}"; then
+              echo "Download successful!"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              echo "Download failed. Retry $RETRY_COUNT of $MAX_RETRIES..."
+              sleep 10
+            fi
+          done
+          
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Download failed after $MAX_RETRIES attempts"
+            exit 1
+          fi
+
+      - name: Create ISO
+        run: |
+          echo "Creating ISO for macOS ${{ github.event.inputs.macos_version }}"
+          
+          # Set variables
+          ISO_NAME="macOS_${{ github.event.inputs.macos_version }}_${{ steps.fetch_installers.outputs.version }}"
+          ISO_NAME="${ISO_NAME// /_}"
+          SPARSE_IMAGE="$HOME/${ISO_NAME}.sparseimage"
+          ISO_FILE="${GITHUB_WORKSPACE}/${ISO_NAME}.iso"
+          VOLUME_NAME="${ISO_NAME}_installer"
+          
+          echo "ISO will be created at: $ISO_FILE"
+          echo "Using installer at: ${{ env.installer_path }}"
+          
+          # Create sparse image
+          echo "Creating sparse image..."
+          hdiutil create -size 20g -volname "$VOLUME_NAME" -fs HFS+ -type SPARSE -attach "$SPARSE_IMAGE"
+          
+          # Create install media
+          echo "Creating install media..."
+          sudo "/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app/Contents/Resources/createinstallmedia" --volume "/Volumes/$VOLUME_NAME" --nointeraction
+          
+          # Detach volume
+          echo "Detaching volume..."
+          INSTALLER_NAME="Install macOS ${{ github.event.inputs.macos_version }}"
+          hdiutil detach "/Volumes/$INSTALLER_NAME" -force || true
+          sleep 2
+          
+          # Create hybrid ISO
+          echo "Creating hybrid ISO..."
+          hdiutil makehybrid -hfs -udf -o "$ISO_FILE" "$SPARSE_IMAGE"
+          
+          # Clean up
+          echo "Cleaning up temporary files..."
+          rm -f "$SPARSE_IMAGE"
+          
+          # Show ISO info
+          if [ -f "$ISO_FILE" ]; then
+            ISO_SIZE=$(du -h "$ISO_FILE" | cut -f1)
+            echo "ISO created successfully!"
+            echo "ISO file: $ISO_FILE"
+            echo "ISO size: $ISO_SIZE"
+          else
+            echo "Error: ISO file not created"
+            exit 1
+          fi
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-ISO
+		  compression-level: 0
+          path: *.iso
+
+      - name: Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Successfully built macOS installer ISO" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**macOS Version:** ${{ github.event.inputs.macos_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version Number:** ${{ steps.fetch_installers.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**ISO Size:** ${{ env.iso_size }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the ISO from the artifacts section above." >> $GITHUB_STEP_SUMMARY
