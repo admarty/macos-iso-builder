@@ -24,7 +24,7 @@ on:
           - 'Mountain Lion'
           - 'Lion'
       release_tag:
-        description: 'Add a tag to attempt upload to Release, e.g. v0.0.1'
+        description: 'Optional: add a tag to attempt upload to Release, e.g. v0.0.1'
         required: false
         type: string
 
@@ -176,35 +176,40 @@ jobs:
             exit 1
           fi
 
+      - name: Compress ISO
+        id: compress_iso
+        run: |
+          ISO_FILE="${{ steps.create_iso.outputs.iso_file }}"
+          ZIP_FILE="${ISO_FILE}.zip"
+
+          echo "Compressing ISO with zip..."
+          zip "$ZIP_FILE" "$ISO_FILE"
+
+          COMPRESSED_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+          echo "compressed_file=$ZIP_FILE" >> $GITHUB_OUTPUT
+          echo "compressed_size=$COMPRESSED_SIZE" >> $GITHUB_OUTPUT
+
       - name: Upload Recovery ISO artifact
         uses: actions/upload-artifact@v5
         with:
           name: macOS-${{ steps.version_info.outputs.version_name }}-Recovery-ISO
-          path: ${{ steps.create_iso.outputs.iso_file }}
-          compression-level: 6
+          path: ${{ steps.compress_iso.outputs.compressed_file }}
+          compression-level: 0
           retention-days: 3
-
-      - name: Cleanup
-        if: always()
-        run: |
-          echo "Cleaning up temporary files..."
-          rm -rf com.apple.recovery.boot
-          rm -f macrecovery.py
 
       - name: Create Release
         if: github.event.inputs.release_tag != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          date_str="$(date -u +%Y-%m-%d)"
-          title="Build: ${date_str}"
+          title="macOS ${{ steps.version_info.outputs.version_name }} Recovery"
           notes="**macOS ${{ steps.version_info.outputs.version_name }} Recovery**"
           tag=${{ github.event.inputs.release_tag }}
 
           gh release create $tag \
             --title "$title" \
             --notes "$notes" \
-            ${{ steps.create_iso.outputs.iso_file }}
+            ${{ steps.compress_iso.outputs.compressed_file }}
 
       - name: Summary
         run: |
