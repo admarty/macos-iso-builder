@@ -180,10 +180,11 @@ jobs:
         id: compress_iso
         run: |
           ISO_FILE="${{ steps.create_iso.outputs.iso_file }}"
-          ZIP_FILE="${ISO_FILE}.zip"
+          ISO_BASENAME=$(basename "$ISO_FILE")
+          ZIP_FILE="${GITHUB_WORKSPACE}/${ISO_BASENAME}.zip"
 
           echo "Compressing ISO with zip..."
-          zip "$ZIP_FILE" "$ISO_FILE"
+          zip -j "$ZIP_FILE" "$ISO_FILE"
 
           COMPRESSED_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
           echo "compressed_file=$ZIP_FILE" >> $GITHUB_OUTPUT
