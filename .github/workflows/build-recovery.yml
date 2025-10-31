@@ -196,7 +196,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          chown -R $(id -u):$(id -g) ${{ github.workspace }}
           date_str="$(date -u +%Y-%m-%d)"
           title="Build: ${date_str}"
           notes="**macOS ${{ steps.version_info.outputs.version_name }} Recovery**"
