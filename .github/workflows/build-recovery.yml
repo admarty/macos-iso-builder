@@ -24,7 +24,7 @@ on:
           - 'Mountain Lion'
           - 'Lion'
       release_tag:
-        description: 'Optional: add a tag to attempt upload to Release, e.g. v0.0.1'
+        description: 'Optional: tag the build (e.g., 10.15) to upload it to Releases for long-term storage'
         required: false
         type: string
 
@@ -212,8 +212,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**ISO Size:** ${{ steps.create_iso.outputs.iso_size }}" >> $GITHUB_STEP_SUMMARY
