@@ -3,12 +3,19 @@
 * Uses GitHub Actions to download official macOS installers directly from Apple servers and create true DVD-format macOS installer ISO files.
 * The generated ISOs are compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**.
 
+> [!Note]
+> Due to high usage, please use the **“Build macOS Recovery ISO image”** workflow instead of the full installer. This workflow runs much faster compared to the full installer ISO.
+> You can create the full macOS installer ISO locally on your macOS VM using [OpenCore-ISO/Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command).
+
+---
+
 ## 📦 Usage
 
 ### Running the Workflow
 
 1. **Fork** this repository.
 2. Go to the **Actions** tab in your forked repository.
+3. Click the green **“I understand my workflows, go ahead and enable them”** button.
 3. Select the **“Build macOS Installer ISO image”** workflow.
 4. Click the **“Run workflow”** button.
 5. Set the inputs:
@@ -17,7 +24,9 @@
 
 6. Click the green **“Run workflow”** button to start the build.
 
-## 📥 Downloading the ISO
+### 📥 Downloading the ISO
+> [!Tip]
+> Enable Cloudflare WARP for faster downloads.
 
 After the workflow finishes:
 
@@ -26,11 +35,17 @@ After the workflow finishes:
 3. Download the ISO artifact (e.g. `macOS-Sequoia-15.7.1-ISO`).
 4. Extract the ZIP file to get the `.iso`.
 
+---
+
 > [!Note]
 > By default, the artifact is kept for 3 days. You can change this in the workflow YAML file.
 
 > [!Tip]
->
 > * For best performance, use a macOS VM on **Proxmox VE** with iGPU or dGPU passthrough.
 > * Installing macOS on Proxmox VE with [LongQT-sea/OpenCore-ISO](https://github.com/LongQT-sea/OpenCore-ISO) is recommended.
 > * For Intel GVT-d iGPU passthrough, see [LongQT-sea/intel-igpu-passthru](https://github.com/LongQT-sea/intel-igpu-passthru).
+
+## Legal Notice
+This tool downloads macOS images directly from Apple's servers.
+Users are responsible for complying with Apple's Software License Agreement.
+These ISOs are intended for legitimate virtualization and testing on Apple hardware or authorized platforms.

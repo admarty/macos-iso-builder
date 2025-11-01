@@ -204,12 +204,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           title="macOS ${{ steps.version_info.outputs.version_name }} Recovery"
-          notes="**macOS ${{ steps.version_info.outputs.version_name }} Recovery**"
           tag=${{ github.event.inputs.release_tag }}
 
           gh release create $tag \
             --title "$title" \
-            --notes "$notes" \
             ${{ steps.compress_iso.outputs.compressed_file }}
 
       - name: Summary

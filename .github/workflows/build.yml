@@ -121,6 +121,9 @@ jobs:
           echo "Creating install media..."
           sudo "$INSTALLER_PATH/Contents/Resources/createinstallmedia" --volume "/Volumes/$VOLUME_NAME" --nointeraction
           
+          # Should wait for a few seconds
+          sleep 5
+
           # Detach volume
           echo "Detaching volume..."
           INSTALLER_NAME="Install macOS ${{ github.event.inputs.macos_version }}"
@@ -161,8 +164,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "Successfully built **macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }}** ISO" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**ISO Size:** ${{ steps.create_iso.outputs.iso_size }}" >> $GITHUB_STEP_SUMMARY
