@@ -1,4 +1,4 @@
-name: Build macOS Installer ISO image
+name: Build macOS Installer ISO/DMG image
 
 on:
   workflow_dispatch:
@@ -17,13 +17,20 @@ on:
           - 'Catalina'
           - 'Mojave'
           - 'High Sierra'
+      image_format:
+        description: 'Image format, iso for VM, dmg for burn to USB drive'
+        required: true
+        type: choice
+        options:
+          - 'iso'
+          - 'dmg'
       specific_version:
-        description: 'Specific version number (optional, e.g., 15.0.1)'
+        description: 'Optional: Specific version number, e.g., 15.7.1'
         required: false
         type: string
 
 jobs:
-  build-iso:
+  build-installer:
     runs-on: macos-15-intel
     timeout-minutes: 120
     
@@ -98,6 +105,7 @@ jobs:
           echo "Installer found at: $INSTALLER_PATH"
 
       - name: Create ISO
+        if: github.event.inputs.image_format == 'iso'
         id: create_iso
         run: |
           echo "Creating ISO for macOS ${{ github.event.inputs.macos_version }}"
@@ -135,11 +143,8 @@ jobs:
           sleep 2
           
           # Create hybrid ISO
+          echo "Creating hybrid ISO..."
           hdiutil makehybrid -hfs -udf -o "$ISO_FILE" "$SPARSE_IMAGE"
-          
-          # Clean up
-          echo "Cleaning up temporary files..."
-          rm -f "$SPARSE_IMAGE"
           
           # Show ISO info and set output
           if [ -f "$ISO_FILE" ]; then
@@ -147,25 +152,136 @@ jobs:
             echo "ISO created successfully!"
             echo "ISO file: $ISO_FILE"
             echo "ISO size: $ISO_SIZE"
-            echo "iso_size=$ISO_SIZE" >> $GITHUB_OUTPUT
-            echo "iso_file=$ISO_FILE" >> $GITHUB_OUTPUT
+            echo "image_size=$ISO_SIZE" >> $GITHUB_OUTPUT
+            echo "image_file=$ISO_FILE" >> $GITHUB_OUTPUT
+            echo "image_name=${ISO_NAME}.iso" >> $GITHUB_OUTPUT
           else
             echo "Error: ISO file not created"
             exit 1
           fi
 
+      - name: Create Optimized DMG
+        if: github.event.inputs.image_format == 'dmg'
+        id: create_dmg
+        run: |
+          echo "Creating optimized DMG for macOS ${{ github.event.inputs.macos_version }}"
+          
+          # Set variables
+          DMG_NAME="macOS_${{ github.event.inputs.macos_version }}_${{ steps.fetch_installers.outputs.version }}"
+          DMG_NAME="${DMG_NAME// /_}"
+          DMG_FILE="${GITHUB_WORKSPACE}/${DMG_NAME}.dmg"
+          VOLUME_NAME="Install_Temp"
+          INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
+          
+          echo "DMG will be created at: $DMG_FILE"
+          echo "Using installer at: $INSTALLER_PATH"
+          
+          # Step 1: Create initial DMG with extra space
+          echo "Step 1: Creating initial 20GB DMG..."
+          hdiutil create -size 20g -volname "$VOLUME_NAME" -fs HFS+ -type UDIF -attach "$DMG_FILE"
+          
+          # Get the disk identifier
+          DISK_ID=$(diskutil list | grep "$VOLUME_NAME" | head -1 | awk '{print $NF}' | sed 's/s[0-9]*$//')
+          PARTITION_ID=$(diskutil list | grep "$VOLUME_NAME" | head -1 | awk '{print $NF}')
+          echo "Disk ID: $DISK_ID"
+          echo "Partition ID: $PARTITION_ID"
+          
+          # Step 2: Create install media
+          echo "Step 2: Creating install media (this may take 10-15 minutes)..."
+          sudo "$INSTALLER_PATH/Contents/Resources/createinstallmedia" --volume "/Volumes/$VOLUME_NAME" --nointeraction
+          
+          # Should wait for a few seconds
+          sleep 5
+          
+          # Step 3: Check minimum size requirements
+          echo "Step 3: Checking space usage..."
+          INSTALLER_VOLUME="Install macOS ${{ github.event.inputs.macos_version }}"
+          INSTALLER_PARTITION=$(diskutil list | grep "$INSTALLER_VOLUME" | awk '{print $NF}')
+          echo "Installer partition: $INSTALLER_PARTITION"
+          
+          diskutil resizeVolume "$INSTALLER_PARTITION" limits | tee resize_limits.txt
+          MIN_SIZE=$(grep "Minimum (constrained by file usage)" resize_limits.txt | awk '{print $6}')
+          echo "Minimum required size: $MIN_SIZE bytes"
+          
+          # Step 4: Resize with dummy partition to consolidate data
+          echo "Step 4: Resizing and consolidating data..."
+          diskutil resizeVolume "$INSTALLER_PARTITION" "${MIN_SIZE}B" HFS+ Dummy 0
+          
+          sleep 2
+          
+          # Step 5: Remove dummy partition
+          echo "Step 5: Removing dummy partition..."
+          DUMMY_PARTITION=$(diskutil list "$DISK_ID" | grep "Dummy" | awk '{print $NF}')
+          if [ -n "$DUMMY_PARTITION" ]; then
+            diskutil eraseVolume free free "$DUMMY_PARTITION"
+            sleep 2
+            
+            # Step 6: Expand installer partition back
+            echo "Step 6: Expanding installer partition..."
+            diskutil resizeVolume "$INSTALLER_PARTITION" R
+          fi
+          
+          sleep 2
+          
+          # Step 7: Detach the disk
+          echo "Step 7: Detaching disk..."
+          hdiutil detach "$DISK_ID" || hdiutil detach "$DISK_ID" -force
+          
+          sleep 3
+          
+          # Step 8: Optimize DMG size
+          echo "Step 8: Optimizing DMG size..."
+          hdiutil resize -size min "$DMG_FILE"
+          
+          # Show final DMG info
+          if [ -f "$DMG_FILE" ]; then
+            FINAL_SIZE=$(du -h "$DMG_FILE" | cut -f1)
+            echo ""
+            echo "========================================="
+            echo "DMG created successfully!"
+            echo "========================================="
+            echo "DMG file: $DMG_FILE"
+            echo "DMG size: $FINAL_SIZE"
+            echo "========================================="
+            echo ""
+            echo "image_size=$FINAL_SIZE" >> $GITHUB_OUTPUT
+            echo "image_file=$DMG_FILE" >> $GITHUB_OUTPUT
+            echo "image_name=${DMG_NAME}.dmg" >> $GITHUB_OUTPUT
+          else
+            echo "Error: DMG file not created"
+            exit 1
+          fi
+
       - name: Upload ISO artifact
+        if: github.event.inputs.image_format == 'iso'
         uses: actions/upload-artifact@v5
         with:
           name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-ISO
-          path: ${{ steps.create_iso.outputs.iso_file }}
+          path: ${{ steps.create_iso.outputs.image_file }}
+          compression-level: 0
+          retention-days: 3
+
+      - name: Upload DMG artifact
+        if: github.event.inputs.image_format == 'dmg'
+        uses: actions/upload-artifact@v5
+        with:
+          name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-DMG
+          path: ${{ steps.create_dmg.outputs.image_file }}
           compression-level: 0
           retention-days: 3
 
       - name: Summary
         run: |
-          echo "Successfully built **macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }}** ISO" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
+            echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Format:** ISO (for Virtual Machines)" >> $GITHUB_STEP_SUMMARY
+            echo "**Image Size:** ${{ steps.create_iso.outputs.image_size }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Format:** Optimized DMG (for USB drives)" >> $GITHUB_STEP_SUMMARY
+            echo "**Image Size:** ${{ steps.create_dmg.outputs.image_size }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**ISO Size:** ${{ steps.create_iso.outputs.iso_size }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Download the ISO from the artifacts section below." >> $GITHUB_STEP_SUMMARY
+          echo "Download the installer from the artifacts section below." >> $GITHUB_STEP_SUMMARY
