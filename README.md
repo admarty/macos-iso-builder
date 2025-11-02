@@ -1,39 +1,49 @@
 # macOS Installer ISO Builder with GitHub Actions
 
-* Uses GitHub Actions to download official macOS installers directly from Apple servers and create true DVD-format macOS installer ISO files.
-* The generated ISOs are compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**.
+Automatically download official macOS installers from Apple and create bootable `iso` or `dmg` images using GitHub Actions.
+
+**Supported formats:**
+* **ISO** – true DVD-format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
+* **DMG** – For creating bootable USB drives
+
+## Workflows Available
+
+### 1. Recovery ISO (Recommended)
+Creates a lightweight recovery ISO that downloads macOS during installation.
+* **Faster** – Completes in ~2-10 minutes
+* **Best for** – Most virtualization use cases
+
+### 2. Full Installer image
+Creates a complete offline installer image (~5-16GB).
+* **Slower** – Takes 20-60 minutes to build
+* **Best for** – Offline installations or when you need the complete installer
 
 > [!Note]
-> Due to high usage, please use the **“Build macOS Recovery ISO image”** workflow instead of the full installer. This workflow runs much faster compared to the full installer ISO.
-> You can create the full macOS installer ISO locally on your macOS VM using [OpenCore-ISO/Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command).
+> Due to GitHub Actions usage limits, please use the **Recovery ISO** workflow unless you specifically need an offline installer. 
+> 
+> **Already have a macOS VM?** You can create full installer ISOs locally using [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command).
 
 ---
 
-## 📦 Usage
-
-### Running the Workflow
+## Usage
 
 1. **Fork** this repository.
 2. Go to the **Actions** tab in your forked repository.
-3. Click the green **“I understand my workflows, go ahead and enable them”** button.
-3. Select the **“Build macOS Installer ISO image”** workflow.
-4. Click the **“Run workflow”** button.
-5. Set the inputs:
+3. Click the green button **"I understand my workflows, go ahead and enable them"**.
+4. Select the **"Build macOS Installer ISO image"** workflow.
+5. Click the **"Run workflow"** button.
+6. Configure the workflow inputs:
+
    * **macOS version** – Choose a version (*Sequoia*, *Sonoma*, etc.).
-   * **Specific version** *(optional)* – Enter a version like `15.7.1`, or leave blank to use the latest.
-
-6. Click the green **“Run workflow”** button to start the build.
-
-### 📥 Downloading the ISO
-> [!Tip]
-> Enable Cloudflare WARP for faster downloads.
-
-After the workflow finishes:
-
-1. Open the completed workflow run.
-2. Scroll to the **Artifacts** section at the bottom.
-3. Download the ISO artifact (e.g. `macOS-Sequoia-15.7.1-ISO`).
-4. Extract the ZIP file to get the `.iso`.
+   * **Image format** – Choose `iso` for Virtual Machines or `dmg` for bootable USB drives.
+   * **Specific version** *(optional)* – Enter a version like `15.6.1`, or leave blank for the latest.
+7. Click the green **"Run workflow"** button to start the build.
+8. Wait for the workflow to complete (this may take 15-60 minutes).
+9. Open the completed workflow run and scroll to the **Artifacts** section.
+10. Download the artifact (e.g., `macOS-Sequoia-15.6.1-ISO`).
+   > [!Tip]
+   > Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads.
+11. Extract the ZIP file to get your `.iso` or `.dmg` file.
 
 ---
 
@@ -48,4 +58,3 @@ After the workflow finishes:
 ## Legal Notice
 This tool downloads macOS images directly from Apple's servers.
 Users are responsible for complying with Apple's Software License Agreement.
-These ISOs are intended for legitimate virtualization and testing on Apple hardware or authorized platforms.
