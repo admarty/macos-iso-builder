@@ -1,6 +1,6 @@
 # macOS Installer ISO Builder with GitHub Actions
 
-Automatically download official macOS installers from Apple and create bootable `iso` or `dmg` images using GitHub Actions.
+Generate bootable macOS installer ISO or DMG images directly from Apple servers via GitHub Actions. Includes intelligent file size optimization to achieve absolute smallest possible installer images.
 
 **Supported formats:**
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
