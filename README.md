@@ -33,9 +33,11 @@ Automatically download official macOS installers from Apple and create bootable 
 8. Wait for the workflow to complete (this may take 15-60 minutes).
 9. Open the completed workflow run and scroll to the **Artifacts** section.
 10. Download the artifact (e.g., `macOS-Sequoia-15.6.1-ISO`).
-   > [!Tip]
-   > Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads.
+> [!Tip]
+> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads.
 11. Extract the ZIP file to get your `.iso` or `.dmg` file.
+
+---
 
 > [!NOTE]
 > By default, artifacts are kept for 3 days. You can change this in the workflow YAML file.
