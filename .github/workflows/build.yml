@@ -143,7 +143,7 @@ jobs:
           sleep 2
           
           # Create hybrid ISO
-          echo "Creating hybrid ISO..."
+          echo "Creating hybrid ISO image..."
           hdiutil makehybrid -hfs -udf -o "$ISO_FILE" "$SPARSE_IMAGE"
           
           # Show ISO info and set output
@@ -155,7 +155,6 @@ jobs:
             echo "ISO size: $ISO_SIZE"
             echo "========================================="
             echo ""
-            echo "image_size=$ISO_SIZE" >> $GITHUB_OUTPUT
             echo "image_file=$ISO_FILE" >> $GITHUB_OUTPUT
             echo "image_name=${ISO_NAME}.iso" >> $GITHUB_OUTPUT
           else
@@ -215,10 +214,10 @@ jobs:
           sync && sleep 5
           
           # Step 6: Expand installer partition back
-          echo "Step 6: Expanding installer partition..."
+          echo "Step 6: Expanding installer partition back..."
           diskutil resizeVolume "$INSTALLER_PARTITION" 0
           
-          sync && sleep 2
+          sync && sleep 5
           
           # Step 7: Detach the disk
           echo "Step 7: Detaching disk..."
@@ -239,7 +238,6 @@ jobs:
             echo "DMG size: $DMG_SIZE"
             echo "========================================="
             echo ""
-            echo "image_size=$DMG_SIZE" >> $GITHUB_OUTPUT
             echo "image_file=$DMG_FILE" >> $GITHUB_OUTPUT
             echo "image_name=${DMG_NAME}.dmg" >> $GITHUB_OUTPUT
           else
@@ -269,12 +267,8 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
             echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Image Size:** ${{ steps.create_iso.outputs.image_size }}" >> $GITHUB_STEP_SUMMARY
           else
             echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Image Size:** ${{ steps.create_dmg.outputs.image_size }}" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Download the installer from the artifacts section below." >> $GITHUB_STEP_SUMMARY
+          echo "> [!Tip]" >> $GITHUB_STEP_SUMMARY
+          echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
