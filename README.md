@@ -7,11 +7,11 @@ Generate bootable macOS installer ISO or DMG images directly from Apple servers 
 * **DMG** – For creating bootable macOS installer USB drive on Windows/Linux with `dd`, `BalenaEtcher`, `Rufus`
 
 **Workflows available:**
-* **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-10 min) • Best for virtualization  
+* **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization  
 * **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-16GB) • Best for offline use
 
 > [!NOTE]
-> Due to GitHub Actions usage limits, use the **Build macOS Recovery ISO** workflow unless you specifically need an offline installer.
+> Use the **Build macOS Recovery ISO** workflow unless you specifically need an offline installer.
 > 
 > Already have a macOS **virtual machine?** Create full installer ISOs locally on your VM using [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command).
 
@@ -40,7 +40,7 @@ Generate bootable macOS installer ISO or DMG images directly from Apple servers 
 ---
 
 > [!NOTE]
-> By default, artifacts are kept for 3 days. You can change this in the workflow YAML file.
+> By default, artifacts are kept for 5 days. You can change this in the workflow YAML file.
 
 > [!TIP]
 > * For best performance, use a macOS VM on **Proxmox VE** with iGPU or dGPU passthrough.
@@ -48,9 +48,6 @@ Generate bootable macOS installer ISO or DMG images directly from Apple servers 
 > * For Intel GVT-d iGPU passthrough, see [LongQT-sea/intel-igpu-passthru](https://github.com/LongQT-sea/intel-igpu-passthru).
 
 ---
-
-## Known Issues
-You may occasionally encounter `hdiutil: couldn't eject "disk4" - Resource busy`. If this occurs, simply re-run the workflow.
 
 ## Legal Notice
 This tool downloads macOS images directly from Apple's servers. Users are responsible for complying with Apple's Software License Agreement.

@@ -24,7 +24,7 @@ on:
           - 'Mountain Lion'
           - 'Lion'
       release_tag:
-        description: 'Optional: tag the build (e.g., 10.15) to upload it to Releases for long-term storage'
+        description: 'Optional: tag the build (e.g., v10.15) to upload it to Releases for long-term storage'
         required: false
         type: string
 
@@ -50,7 +50,6 @@ jobs:
         run: |
           echo "Downloading macrecovery.py from acidanthera/OpenCorePkg..."
           curl -sL "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Utilities/macrecovery/macrecovery.py" -o macrecovery.py
-          chmod +x macrecovery.py
 
       - name: Get version info
         id: version_info
@@ -195,7 +194,7 @@ jobs:
           name: macOS-${{ steps.version_info.outputs.version_name }}-Recovery-ISO
           path: ${{ steps.compress_iso.outputs.compressed_file }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 5
 
       - name: Create Release
         if: github.event.inputs.release_tag != ''

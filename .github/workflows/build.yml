@@ -18,7 +18,7 @@ on:
           - 'Mojave'
           - 'High Sierra'
       image_format:
-        description: 'Select image format, iso for VM, dmg for burn to USB drive'
+        description: 'Image format: iso for virtual machines, dmg for burning to USB drive'
         required: true
         type: choice
         options:
@@ -76,24 +76,21 @@ jobs:
           echo "Downloading macOS ${{ github.event.inputs.macos_version }} version ${{ steps.fetch_installers.outputs.version }}"
           
           # Download with retries
-          MAX_RETRIES=3
-          RETRY_COUNT=0
+          RETRIES_COUNT=3
           
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          for attempt in $(seq 1 $RETRIES_COUNT); do
+            echo "Download attempt $attempt of $RETRIES_COUNT..."
             if softwareupdate --fetch-full-installer --full-installer-version "${{ steps.fetch_installers.outputs.version }}"; then
               echo "Download successful!"
               break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              echo "Download failed. Retry $RETRY_COUNT of $MAX_RETRIES..."
-              sleep 5
             fi
+            if [ $attempt -eq $RETRIES_COUNT ]; then
+              echo "Download failed after $RETRIES_COUNT attempts"
+              exit 1
+            fi
+            echo "Retrying in 5s..."
+            sleep 5
           done
-          
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "Download failed after $MAX_RETRIES attempts"
-            exit 1
-          fi
           
           # Verify installer exists and set path
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
@@ -117,6 +114,7 @@ jobs:
           ISO_FILE="${GITHUB_WORKSPACE}/${ISO_NAME}.iso"
           VOLUME_NAME="${ISO_NAME}_installer"
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
+          RETRIES_COUNT=4
           
           echo "ISO will be created at: $ISO_FILE"
           echo "Using installer at: $INSTALLER_PATH"
@@ -135,15 +133,20 @@ jobs:
           # Detach volume
           echo "Detaching volume..."
           INSTALLER_NAME="Install macOS ${{ github.event.inputs.macos_version }}"
-          if hdiutil detach "/Volumes/$INSTALLER_NAME" || hdiutil detach "/Volumes/$INSTALLER_NAME" -force; then
-            echo "Volume detached successfully"
-          else
-            echo "Failed to detach volume"
-          fi
-          sleep 2
+          
+          for attempt in $(seq 1 $RETRIES_COUNT); do
+            echo "Detach attempt $attempt of $RETRIES_COUNT..."
+            if hdiutil detach "/Volumes/$INSTALLER_NAME"; then
+              echo "Disk detached successfully."
+              break
+            fi
+            if [ $attempt -lt $RETRIES_COUNT ]; then
+              echo "Detach failed, retrying..."
+              sleep 3
+            fi
+          done
           
           # Create hybrid ISO
-          echo "Creating hybrid ISO image..."
           hdiutil makehybrid -hfs -udf -o "$ISO_FILE" "$SPARSE_IMAGE"
           
           # Show ISO info and set output
@@ -174,6 +177,7 @@ jobs:
           DMG_FILE="${GITHUB_WORKSPACE}/${DMG_NAME}.dmg"
           VOLUME_NAME="Install_Temp"
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
+          RETRIES_COUNT=5
           
           echo "DMG will be created at: $DMG_FILE"
           echo "Using installer at: $INSTALLER_PATH"
@@ -193,48 +197,61 @@ jobs:
           
           # Step 3: Check minimum size requirements
           echo "Step 3: Check minimum size requirements..."
-          INSTALLER_PARTITION="/dev/${DISK_ID}s2"
+          INSTALLER_PARTITION="${DISK_ID}s2"
           diskutil resizeVolume "$INSTALLER_PARTITION" limits | tee resize_limits.txt
           
           # Extract the byte value from parentheses
           MIN_SIZE=$(grep "Minimum (constrained by file usage)" resize_limits.txt | sed -n 's/.*(\([0-9]*\) Bytes).*/\1/p')
           echo "Minimum size: $MIN_SIZE bytes"
           
-          # Step 4: Consolidate installer data by adding a dummy partition, this forces macOS to move all data to the front of the partition
+          # Step 4: Consolidate the installer data partition by shrinking the macOS installer partition to the minimum size.
           echo "Step 4: Resizing and consolidating data..."
-          diskutil resizeVolume "$INSTALLER_PARTITION" "${MIN_SIZE}B" HFS+ Dummy 0
+          diskutil resizeVolume "$INSTALLER_PARTITION" "${MIN_SIZE}B" free free 0
           
           sync && sleep 5
           
-          # Step 5: Remove dummy partition, leaving free space at the end
-          echo "Step 5: Removing dummy partition..."
-          DUMMY_PARTITION=${DISK_ID}s3
-          diskutil eraseVolume free free "$DUMMY_PARTITION"
+          # Step 5: Expand installer partition back
+          echo "Step 5: Expanding installer partition back..."
+          for attempt in $(seq 1 $RETRIES_COUNT); do
+            sync && echo "Resize attempt $attempt of $RETRIES_COUNT..."
+            if diskutil resizeVolume "$INSTALLER_PARTITION" 0; then
+              echo "Partition resized successfully."
+              break
+            fi
+            if [ $attempt -lt $RETRIES_COUNT ]; then
+              echo "Resize failed, retrying..."
+              sleep 3
+            fi
+          done
           
           sync && sleep 5
           
-          # Step 6: Expand installer partition back
-          echo "Step 6: Expanding installer partition back..."
-          diskutil resizeVolume "$INSTALLER_PARTITION" 0
-          
-          sync && sleep 5
-          
-          # Step 7: Detach the disk
-          echo "Step 7: Detaching disk..."
-          hdiutil detach "$DISK_ID" || hdiutil detach "$DISK_ID" -force
-          
+          # Step 6: Detach the disk
+          echo "Step 6: Detaching disk..."
+          for attempt in $(seq 1 $RETRIES_COUNT); do
+            echo "Detach attempt $attempt of $RETRIES_COUNT..."
+            if hdiutil detach "$DISK_ID"; then
+              echo "Disk detached successfully."
+              break
+            fi
+            if [ $attempt -lt $RETRIES_COUNT ]; then
+              echo "Detach failed, retrying..."
+              sleep 3
+            fi
+          done
+
           sleep 2
           
-          # Step 8: Optimize DMG size
-          echo "Step 8: Optimizing DMG size..."
+          # Step 7: Optimize DMG size
+          echo "Step 7: Optimizing DMG size..."
           hdiutil resize -size min "$DMG_FILE"
-          
+
           # Show final DMG info
           if [ -f "$DMG_FILE" ]; then
             DMG_SIZE=$(du -h "$DMG_FILE" | cut -f1)
             echo ""
             echo "========================================="
-            echo "Optimize DMG created successfully!"
+            echo "Optimized DMG created successfully!"
             echo "DMG size: $DMG_SIZE"
             echo "========================================="
             echo ""
@@ -252,7 +269,7 @@ jobs:
           name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-ISO
           path: ${{ steps.create_iso.outputs.image_file }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 5
 
       - name: Upload DMG artifact
         if: github.event.inputs.image_format == 'dmg'
@@ -261,7 +278,7 @@ jobs:
           name: macOS-${{ github.event.inputs.macos_version }}-${{ steps.fetch_installers.outputs.version }}-DMG
           path: ${{ steps.create_dmg.outputs.image_file }}
           compression-level: 0
-          retention-days: 3
+          retention-days: 5
 
       - name: Summary
         run: |
