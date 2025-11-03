@@ -112,9 +112,9 @@ jobs:
           ISO_NAME="${ISO_NAME// /_}"
           SPARSE_IMAGE="/tmp/${ISO_NAME}.sparseimage"
           ISO_FILE="${GITHUB_WORKSPACE}/${ISO_NAME}.iso"
-          VOLUME_NAME="${ISO_NAME}_installer"
+          VOLUME_NAME="myvolume"
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
-          RETRIES_COUNT=4
+          RETRIES_COUNT=5
           
           echo "ISO will be created at: $ISO_FILE"
           echo "Using installer at: $INSTALLER_PATH"
@@ -123,26 +123,27 @@ jobs:
           echo "Creating sparse image..."
           hdiutil create -size 20g -volname "$VOLUME_NAME" -fs HFS+ -type SPARSE -attach "$SPARSE_IMAGE"
           
+          # Get the disk identifier
+          DISK_ID=$(diskutil list | grep "$VOLUME_NAME" | head -1 | awk '{print $NF}' | sed 's/s[0-9]*$//')
+          
           # Create install media
           echo "Creating install media..."
           sudo "$INSTALLER_PATH/Contents/Resources/createinstallmedia" --volume "/Volumes/$VOLUME_NAME" --nointeraction
           
           # Should wait for a few seconds
           sync && sleep 5
-
-          # Detach volume
-          echo "Detaching volume..."
-          INSTALLER_NAME="Install macOS ${{ github.event.inputs.macos_version }}"
           
+          # Detach disk
+          echo "Detaching $DISK_ID ..."
           for attempt in $(seq 1 $RETRIES_COUNT); do
             echo "Detach attempt $attempt of $RETRIES_COUNT..."
-            if hdiutil detach "/Volumes/$INSTALLER_NAME"; then
+            if hdiutil detach "$DISK_ID" || hdiutil detach "$DISK_ID" -force; then
               echo "Disk detached successfully."
               break
             fi
             if [ $attempt -lt $RETRIES_COUNT ]; then
               echo "Detach failed, retrying..."
-              sleep 3
+              sync && sleep 5
             fi
           done
           
@@ -213,14 +214,14 @@ jobs:
           # Step 5: Expand installer partition back
           echo "Step 5: Expanding installer partition back..."
           for attempt in $(seq 1 $RETRIES_COUNT); do
-            sync && echo "Resize attempt $attempt of $RETRIES_COUNT..."
+            echo "Resize attempt $attempt of $RETRIES_COUNT..."
             if diskutil resizeVolume "$INSTALLER_PARTITION" 0; then
               echo "Partition resized successfully."
               break
             fi
             if [ $attempt -lt $RETRIES_COUNT ]; then
               echo "Resize failed, retrying..."
-              sleep 3
+              sync && sleep 5
             fi
           done
           
@@ -230,13 +231,13 @@ jobs:
           echo "Step 6: Detaching disk..."
           for attempt in $(seq 1 $RETRIES_COUNT); do
             echo "Detach attempt $attempt of $RETRIES_COUNT..."
-            if hdiutil detach "$DISK_ID"; then
+            if hdiutil detach "$DISK_ID" || hdiutil detach "$DISK_ID" -force; then
               echo "Disk detached successfully."
               break
             fi
             if [ $attempt -lt $RETRIES_COUNT ]; then
               echo "Detach failed, retrying..."
-              sleep 3
+              sync && sleep 5
             fi
           done
 
