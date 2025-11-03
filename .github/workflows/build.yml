@@ -136,13 +136,13 @@ jobs:
           
           for attempt in $(seq 1 $RETRIES_COUNT); do
             echo "Detach attempt $attempt of $RETRIES_COUNT..."
-            if hdiutil detach "/Volumes/$INSTALLER_NAME"; then
+            if hdiutil detach "/Volumes/$INSTALLER_NAME" || hdiutil detach "/Volumes/$INSTALLER_NAME" -force; then
               echo "Disk detached successfully."
               break
             fi
             if [ $attempt -lt $RETRIES_COUNT ]; then
               echo "Detach failed, retrying..."
-              sleep 3
+              sync && sleep 5
             fi
           done
           
@@ -230,13 +230,13 @@ jobs:
           echo "Step 6: Detaching disk..."
           for attempt in $(seq 1 $RETRIES_COUNT); do
             echo "Detach attempt $attempt of $RETRIES_COUNT..."
-            if hdiutil detach "$DISK_ID"; then
+            if hdiutil detach "$DISK_ID" || hdiutil detach "$DISK_ID" -force; then
               echo "Disk detached successfully."
               break
             fi
             if [ $attempt -lt $RETRIES_COUNT ]; then
               echo "Detach failed, retrying..."
-              sleep 3
+              sync && sleep 5
             fi
           done
 
