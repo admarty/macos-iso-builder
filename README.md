@@ -1,6 +1,6 @@
-# macOS Installer ISO Builder with GitHub Actions
+# macOS Installer ISO Builder via GitHub Actions – no Mac required
 
-Generate bootable macOS installer ISO or DMG images directly from Apple servers via GitHub Actions. Includes intelligent file size optimization to achieve absolute smallest possible installer images.
+Generate bootable macOS installer ISO or DMG images directly from Apple’s servers via GitHub Actions. Includes intelligent size optimization to produce the smallest possible installer images.
 
 **Supported formats:**
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
@@ -30,7 +30,7 @@ Generate bootable macOS installer ISO or DMG images directly from Apple servers 
    * **Image format** – Choose `iso` for virtual machines or `dmg` for bootable USB drives.
    * **Specific version** *(optional)* – Enter a version like `15.6.1`, or leave blank for the latest.
 7. Click the green button **"Run workflow"** to start the build.
-8. Wait for the workflow to complete (this may take 15-60 minutes).
+8. Wait for the workflow to complete (this may take 20-60 minutes).
 9. Open the completed workflow run and scroll to the **Artifacts** section.
 10. Download the artifact (e.g., `macOS-Sequoia-15.6.1-ISO`).
 > [!Tip]

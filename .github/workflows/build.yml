@@ -72,6 +72,10 @@ jobs:
           echo "version=$INSTALLER_VERSION" >> $GITHUB_OUTPUT
 
       - name: Download macOS installer
+        id: download_installer
+        # Download should be done in 60 minutes — if it takes longer, something’s wrong with the runner.
+        timeout-minutes: 60
+        continue-on-error: true
         run: |
           echo "Downloading macOS ${{ github.event.inputs.macos_version }} version ${{ steps.fetch_installers.outputs.version }}"
           
@@ -82,24 +86,28 @@ jobs:
             echo "Download attempt $attempt of $RETRIES_COUNT..."
             if softwareupdate --fetch-full-installer --full-installer-version "${{ steps.fetch_installers.outputs.version }}"; then
               echo "Download successful!"
+              echo "download_success=true" >> $GITHUB_OUTPUT
               break
             fi
             if [ $attempt -eq $RETRIES_COUNT ]; then
               echo "Download failed after $RETRIES_COUNT attempts"
+              echo "download_success=false" >> $GITHUB_OUTPUT
               exit 1
             fi
             echo "Retrying in 5s..."
             sleep 5
           done
-          
-          # Verify installer exists and set path
-          INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
-          if [ ! -d "$INSTALLER_PATH" ]; then
-            echo "Error: Installer not found at $INSTALLER_PATH"
-            ls -la /Applications/Install*.app 2>/dev/null || echo "No Install*.app found"
-            exit 1
+
+      - name: Check download status
+        if: always()
+        run: |
+          if [ "${{ steps.download_installer.outcome }}" == "failure" ] || [ "${{ steps.download_installer.outcome }}" == "cancelled" ]; then
+            echo "download_failed=true" >> $GITHUB_ENV
+          elif [ "${{ steps.download_installer.outputs.download_success }}" != "true" ]; then
+            echo "download_failed=true" >> $GITHUB_ENV
+          else
+            echo "download_failed=false" >> $GITHUB_ENV
           fi
-          echo "Installer found at: $INSTALLER_PATH"
 
       - name: Create ISO
         if: github.event.inputs.image_format == 'iso'
@@ -114,7 +122,7 @@ jobs:
           ISO_FILE="${GITHUB_WORKSPACE}/${ISO_NAME}.iso"
           VOLUME_NAME="myvolume"
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
-          RETRIES_COUNT=5
+          RETRIES_COUNT=10
           
           echo "ISO will be created at: $ISO_FILE"
           echo "Using installer at: $INSTALLER_PATH"
@@ -176,9 +184,9 @@ jobs:
           DMG_NAME="macOS_${{ github.event.inputs.macos_version }}_${{ steps.fetch_installers.outputs.version }}"
           DMG_NAME="${DMG_NAME// /_}"
           DMG_FILE="${GITHUB_WORKSPACE}/${DMG_NAME}.dmg"
-          VOLUME_NAME="Install_Temp"
+          VOLUME_NAME="myvolume"
           INSTALLER_PATH="/Applications/Install macOS ${{ github.event.inputs.macos_version }}.app"
-          RETRIES_COUNT=5
+          RETRIES_COUNT=10
           
           echo "DMG will be created at: $DMG_FILE"
           echo "Using installer at: $INSTALLER_PATH"
@@ -282,11 +290,29 @@ jobs:
           retention-days: 5
 
       - name: Summary
+        if: always()
         run: |
-          if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
-            echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.download_failed }}" == "true" ]; then
+            echo "## Download Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The macOS installer download has failed." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
+            echo "> This runner may have network issues. Please **re-run the workflow** to try a different runner." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
+            echo "> If downloads consistently fail, try:" >> $GITHUB_STEP_SUMMARY
+            echo "> - Running during off-peak hours" >> $GITHUB_STEP_SUMMARY
+            echo "> - Selecting a different macOS version" >> $GITHUB_STEP_SUMMARY
+            echo "> - Or build Recovery ISO instead" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ job.status }}" == "success" ]; then
+            if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
+              echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
+            echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
           fi
-          echo "> [!Tip]" >> $GITHUB_STEP_SUMMARY
-          echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
