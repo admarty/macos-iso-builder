@@ -8,12 +8,12 @@ Generate bootable macOS installer ISO or DMG images directly from Apple’s serv
 
 **Workflows available:**
 * **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization  
-* **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-16GB) • Best for offline use
+* **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-18GB) • Best for offline use
 
-> [!NOTE]
-> Use the **Build macOS Recovery ISO** workflow unless you specifically need an offline installer.
-> 
-> Already have a macOS **virtual machine?** Create full installer ISOs locally on your VM using [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command).
+> [!IMPORTANT]  
+> * Download the macOS Recovery ISO from the [Releases](https://github.com/LongQT-sea/OpenCore-ISO/releases) page — it’s all you need to install macOS in a VM.  
+> * If you really need the full macOS installer, build it inside your macOS VM using the [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command) script.  
+> * GitHub-hosted runners are a free public resource — please use them responsibly.
 
 ---
 
