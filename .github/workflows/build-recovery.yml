@@ -186,7 +186,6 @@ jobs:
 
           COMPRESSED_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
           echo "compressed_file=$ZIP_FILE" >> $GITHUB_OUTPUT
-          echo "compressed_size=$COMPRESSED_SIZE" >> $GITHUB_OUTPUT
 
       - name: Upload Recovery ISO artifact
         uses: actions/upload-artifact@v5

@@ -24,10 +24,6 @@ on:
         options:
           - 'iso'
           - 'dmg'
-      specific_version:
-        description: 'Optional: Specific version number, e.g., 15.7.1'
-        required: false
-        type: string
 
 jobs:
   build-installer:
@@ -54,15 +50,9 @@ jobs:
           softwareupdate --list-full-installers 2>/dev/null | grep "* Title:" | sed 's/^[[:space:]]*//' > installers.txt
           cat installers.txt
           
-          # Parse and find matching installer
-          if [ -n "${{ github.event.inputs.specific_version }}" ]; then
-            INSTALLER_VERSION="${{ github.event.inputs.specific_version }}"
-            echo "Looking for specific version: $INSTALLER_VERSION"
-          else
-            # Get latest version for selected macOS
-            INSTALLER_VERSION=$(grep "${{ github.event.inputs.macos_version }}" installers.txt | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
-            echo "Found latest ${{ github.event.inputs.macos_version }} version: $INSTALLER_VERSION"
-          fi
+          # Get latest version for selected macOS
+          INSTALLER_VERSION=$(grep "${{ github.event.inputs.macos_version }}" installers.txt | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
+          echo "Found latest ${{ github.event.inputs.macos_version }} version: $INSTALLER_VERSION"
           
           if [ -z "$INSTALLER_VERSION" ]; then
             echo "Error: Could not find installer version"
@@ -293,15 +283,12 @@ jobs:
         if: always()
         run: |
           if [ "${{ env.download_failed }}" == "true" ]; then
-            echo "## Download Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "The macOS installer download has failed." >> $GITHUB_STEP_SUMMARY
+            echo "## Download macOS Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
             echo "> This runner may have network issues. Please **re-run the workflow** to try a different runner." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
-            echo "> If downloads consistently fail, try:" >> $GITHUB_STEP_SUMMARY
             echo "> - Running during off-peak hours" >> $GITHUB_STEP_SUMMARY
             echo "> - Selecting a different macOS version" >> $GITHUB_STEP_SUMMARY
             echo "> - Or build Recovery ISO instead" >> $GITHUB_STEP_SUMMARY
@@ -311,7 +298,6 @@ jobs:
             else
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
             fi
-            
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
             echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
