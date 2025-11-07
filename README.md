@@ -1,6 +1,7 @@
 # macOS Installer ISO Builder via GitHub Actions – no Mac required
 
-Generate bootable macOS installer ISO or DMG images directly from Apple’s servers via GitHub Actions. Includes intelligent size optimization to produce the smallest possible installer images.
+- Generate bootable macOS installer ISO or DMG images directly from Apple’s servers via GitHub Actions.
+- Includes intelligent file size optimization to produce the smallest possible installer images.
 
 **Supported formats:**
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
@@ -11,9 +12,9 @@ Generate bootable macOS installer ISO or DMG images directly from Apple’s serv
 * **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-18GB) • Best for offline use
 
 > [!IMPORTANT]  
-> * Download the macOS Recovery ISO from the [Releases](https://github.com/LongQT-sea/macos-iso-builder/releases) page — it’s all you need to install macOS in a VM.  
-> * If you really need the full macOS installer, build it inside your macOS VM using the [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command) script.
+> * Download the macOS Recovery ISO from the [Releases](https://github.com/LongQT-sea/macos-iso-builder/releases) page — it's all you need to install macOS in a VM.
 > * GitHub-hosted runners are a free public resource — please use them responsibly.
+> * Already have macOS VM? Build macOS Installer ISO inside your VM with [Create_macOS_ISO.command](https://github.com/LongQT-sea/OpenCore-ISO/blob/main/Create_macOS_ISO.command)
 
 ---
 
@@ -28,11 +29,10 @@ Generate bootable macOS installer ISO or DMG images directly from Apple’s serv
 
    * **macOS version** – Choose a version (*Sequoia*, *Sonoma*, etc.).
    * **Image format** – Choose `iso` for virtual machines or `dmg` for bootable USB drives.
-   * **Specific version** *(optional)* – Enter a version like `15.6.1`, or leave blank for the latest.
 7. Click the green button **"Run workflow"** to start the build.
 8. Wait for the workflow to complete (this may take 20-60 minutes).
 9. Open the completed workflow run and scroll to the **Artifacts** section.
-10. Download the artifact (e.g., `macOS-Sequoia-15.6.1-ISO`).
+10. Download the artifact (e.g., `macOS-Sequoia-15.7.2-ISO`).
 > [!Tip]
 > Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads.
 11. Extract the ZIP file to get your `.iso` or `.dmg` file.
