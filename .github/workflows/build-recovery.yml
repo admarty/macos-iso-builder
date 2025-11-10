@@ -209,6 +209,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
+          echo "## Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
+          echo "Note: This ISO is intended for creating macOS virtual machine in Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
           echo "> [!Tip]" >> $GITHUB_STEP_SUMMARY
           echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY

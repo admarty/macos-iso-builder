@@ -53,12 +53,6 @@ jobs:
           # Get latest version for selected macOS
           INSTALLER_VERSION=$(grep "${{ github.event.inputs.macos_version }}" installers.txt | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
           echo "Found latest ${{ github.event.inputs.macos_version }} version: $INSTALLER_VERSION"
-          
-          if [ -z "$INSTALLER_VERSION" ]; then
-            echo "Error: Could not find installer version"
-            exit 1
-          fi
-          
           echo "version=$INSTALLER_VERSION" >> $GITHUB_OUTPUT
 
       - name: Download macOS installer
@@ -295,8 +289,10 @@ jobs:
           elif [ "${{ job.status }}" == "success" ]; then
             if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
+              echo "Note: This ISO is intended for creating macOS virtual machine in Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
             else
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
+              echo "Note: This DMG is intended for create bootable installer USB drive on Windows with [**Rufus**](https://rufus.ie/en/#download) or on Linux with `dd`" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
