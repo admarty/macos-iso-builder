@@ -18,7 +18,7 @@ on:
           - 'Mojave'
           - 'High Sierra'
       image_format:
-        description: 'Image format: iso for virtual machines, dmg for burning to USB drive'
+        description: 'Select image format: iso for virtual machines, dmg for burning to USB drive'
         required: true
         type: choice
         options:
@@ -292,7 +292,7 @@ jobs:
               echo "Note: This ISO is intended for creating macOS virtual machine in Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
             else
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
-              echo "Note: This DMG is intended for create bootable installer USB drive on Windows with [**Rufus**](https://rufus.ie/en/#download) or on Linux with `dd`" >> $GITHUB_STEP_SUMMARY
+              echo 'Note: This DMG is intended for create bootable installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with `dd`' >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY

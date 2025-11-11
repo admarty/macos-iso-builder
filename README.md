@@ -1,14 +1,14 @@
-## macOS Installer ISO/DMG Builder via GitHub Actions – no Mac required
+## macOS Installer images builder – no Mac required
 
-- Generate bootable macOS installer ISO or DMG images directly from Apple’s servers via GitHub Actions.
-- Includes intelligent file size optimization to produce the smallest possible installer images.
+* Generate bootable macOS installer images directly from Apple’s servers via GitHub Actions.
+* Includes intelligent file size optimization to produce the smallest possible installer images.
 
 **Supported formats:**
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
-* **DMG** – For create bootable macOS installer USB drive on Windows with [**Rufus**](https://rufus.ie/en/#download) or on Linux with `dd`
+* **DMG** – For create bootable macOS installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with **`dd`**
 
 **Workflows available:**
-* **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization  
+* **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization
 * **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-18GB) • Best for offline use
 
 > [!IMPORTANT]  
