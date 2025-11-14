@@ -7,9 +7,6 @@
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
 * **DMG** – To create bootable macOS installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with **`dd`**
 
-> [!Tip]
-> For Hackintosh users: after flashing the `dmg` image to the USB drive with [Rufus](https://rufus.ie/en/#download), there will be free/unallocated space left. Use Disk Management to create a new FAT32 partition and place your EFI there.
-
 **Workflows available:**
 * **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization
 * **macOS Full Installer** – Complete offline installer (build takes ~20-60 min, 5-18GB) • Best for offline use
@@ -41,6 +38,9 @@
 11. Extract the ZIP file to get your `.iso` or `.dmg` file.
 
 ---
+
+> [!Tip]
+> Optional: After flashing the `dmg` image to the USB drive with [Rufus](https://rufus.ie/en/#download), there will be free/unallocated space left. Use Disk Management to create a new FAT32 partition and place your EFI there if needed.
 
 > [!NOTE]
 > By default, artifacts are kept for 5 days. You can change this in the workflow YAML file.
