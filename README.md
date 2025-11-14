@@ -3,12 +3,9 @@
 * Generate bootable macOS installer images directly from Apple’s servers via GitHub Actions.
 * Includes intelligent file size optimization to produce the smallest possible installer images.
 
-> [!TIP]
-> **Found this useful?** Give it a ⭐ star to help others discover it!
-
 **Supported formats:**
 * **ISO** – True DVD format compatible with **Proxmox VE**, **QEMU**, **VirtualBox**, and **VMware**
-* **DMG** – For create bootable macOS installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with **`dd`**
+* **DMG** – To create bootable macOS installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with **`dd`**
 
 **Workflows available:**
 * **macOS Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization
