@@ -290,11 +290,13 @@ jobs:
             if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} ISO" >> $GITHUB_STEP_SUMMARY
               echo "Note: This ISO is intended for creating macOS virtual machine in Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
-              echo "⭐ If this tool helps you, a star would be appreciated: [macos-iso-builder](https://github.com/LongQT-sea/macos-iso-builder)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "If this tool helped you, please consider [giving it a star ⭐](https://github.com/LongQT-sea/macos-iso-builder)" >> $GITHUB_STEP_SUMMARY
             else
               echo "## Successfully built macOS ${{ github.event.inputs.macos_version }} ${{ steps.fetch_installers.outputs.version }} DMG" >> $GITHUB_STEP_SUMMARY
               echo 'Note: This DMG is intended for create bootable installer USB drive on Windows with [Rufus](https://rufus.ie/en/#download) or on Linux with `dd`' >> $GITHUB_STEP_SUMMARY
-              echo "⭐ If this tool helps you, a star would be appreciated: [macos-iso-builder](https://github.com/LongQT-sea/macos-iso-builder)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "If this tool helped you, please consider [giving it a star ⭐](https://github.com/LongQT-sea/macos-iso-builder)" >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
