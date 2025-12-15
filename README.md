@@ -1,4 +1,4 @@
-## Build macOS Installer ISO and DMG image via Github Action – No Mac Required
+## Build macOS Installer image via Github Action – No Mac Required
 
 * Support **macOS 10.7 Lion** through **macOS 26 Tahoe** installers. 
 * Download macOS installers exclusively from official Apple sources.
@@ -15,10 +15,10 @@
 > [!IMPORTANT]
 > * Use the **"Build macOS Recovery ISO image"** workflow unless you really need an offline installer.
 > * GitHub-hosted runners are a free public resource — please use them responsibly.
-> * Already have macOS? Build macOS installer ISO/DMG image with this command (replace tahoe with the desired version):
-> ```
-> curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
-> ```
+> * Already have macOS? Build macOS installer ISO/DMG image with this command (replace `tahoe` with the desired version):
+```
+curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
+```
 
 ---
 

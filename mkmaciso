@@ -542,7 +542,8 @@ download_legacy_macos() {
     esac
     
     log_info "Downloading macOS $(get_codename $version_num)..."
-    curl --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
+    # If download does not finish within 20 minutes (--max-time 1200), redownload to establish a new connection, which may result in faster speeds.
+    curl --retry 5 --retry-all-errors --max-time 1200 --connect-timeout 10 --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
 }
 
 # macOS 10.9 Mavericks requires special handling:
@@ -594,8 +595,9 @@ k=$key")
     log_info "Downloading macOS Mavericks using special method..."
     
     # Download Mavericks InstallESD.dmg and cache it in /Applications to avoid redownload in the future
-    curl --progress-bar "$mavericks_url" -H "Cookie: AssetToken=$token" > "$WORK_DIR/InstallESD.dmg" && mkdir -p "/Applications/Install OS X Mavericks.app/Contents/SharedSupport"
-    
+    # If download does not finish within 20 minutes (--max-time 1200), redownload to establish a new connection, which may result in faster speeds.
+    curl --retry 5 --retry-all-errors --max-time 1200 --connect-timeout 10 --progress-bar "$mavericks_url" -H "Cookie: AssetToken=$token" -o "$WORK_DIR/InstallESD.dmg" && mkdir -p "/Applications/Install OS X Mavericks.app/Contents/SharedSupport"
+
     if [ -d "/Applications/Install OS X Mavericks.app/Contents/SharedSupport" ]; then
         mv -f "$WORK_DIR/InstallESD.dmg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/InstallESD.dmg"
     fi
