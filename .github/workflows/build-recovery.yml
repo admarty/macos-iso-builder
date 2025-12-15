@@ -17,12 +17,6 @@ on:
           - 'Catalina'
           - 'Mojave'
           - 'High Sierra'
-          - 'Sierra'
-          - 'El Capitan'
-          - 'Yosemite'
-          - 'Mavericks'
-          - 'Mountain Lion'
-          - 'Lion'
       release_tag:
         description: 'Optional: tag the build (e.g., v10.15) to upload it to Releases for long-term storage'
         required: false
@@ -31,7 +25,9 @@ on:
 jobs:
   build-recovery-iso:
     runs-on: macos-latest
-    timeout-minutes: 10
+    permissions:
+      contents: write  # needed to create releases
+    timeout-minutes: 15
     
     steps:
       - name: Checkout repository
@@ -49,7 +45,7 @@ jobs:
       - name: Download macrecovery.py
         run: |
           echo "Downloading macrecovery.py from acidanthera/OpenCorePkg..."
-          curl -sL "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Utilities/macrecovery/macrecovery.py" -o macrecovery.py
+          curl -OL "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Utilities/macrecovery/macrecovery.py"
 
       - name: Get version info
         id: version_info
@@ -193,15 +189,27 @@ jobs:
           name: macOS-${{ steps.version_info.outputs.version_name }}-Recovery-ISO
           path: ${{ steps.compress_iso.outputs.compressed_file }}
           compression-level: 0
-          retention-days: 5
+          retention-days: 7
+
+      - name: Sanitize release tag
+        id: sanitize_tag
+        if: github.event.inputs.release_tag != ''
+        run: |
+          tag="${{ github.event.inputs.release_tag }}"
+    
+          # Replace spaces and other invalid characters with hyphens
+          # Keep only alphanumeric, dots, hyphens, and underscores
+          sanitized_tag=$(echo "$tag" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          echo "sanitized_tag=$sanitized_tag" >> $GITHUB_OUTPUT
 
       - name: Create Release
         if: github.event.inputs.release_tag != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
         run: |
           title="macOS ${{ steps.version_info.outputs.version_name }} Recovery"
-          tag=${{ github.event.inputs.release_tag }}
+          tag="${{ steps.sanitize_tag.outputs.sanitized_tag }}"
 
           gh release create $tag \
             --title "$title" \
@@ -210,8 +218,9 @@ jobs:
       - name: Summary
         run: |
           echo "## Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
-          echo "Note: This ISO is intended for creating macOS virtual machine in Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
+          echo "Note: This ISO is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "If this tool helped you, please consider [giving it a star ⭐](https://github.com/LongQT-sea/macos-iso-builder)" >> $GITHUB_STEP_SUMMARY
-          echo "> [!Tip]" >> $GITHUB_STEP_SUMMARY
+          echo "Found this useful? Give it a ⭐ star so others can find it too! https://github.com/LongQT-sea/macos-iso-builder" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
           echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
