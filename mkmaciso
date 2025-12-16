@@ -99,12 +99,11 @@ detach_disk() {
     
     for attempt in $(seq 1 "$RETRIES_COUNT"); do
         log_info "Detach attempt $attempt of $RETRIES_COUNT..."
-        if hdiutil detach "$disk" 2>/dev/null || hdiutil detach "$disk" -force 2>/dev/null; then
+        if sync && sleep 5 && hdiutil detach "$disk" 2>/dev/null || hdiutil detach "$disk" -force 2>/dev/null; then
             log_info "Disk detached successfully"
             return 0
         fi
         [ "$attempt" -lt "$RETRIES_COUNT" ] && log_warn "Detach failed, retrying..."
-        sleep 2
     done
     
     log_error "Failed to detach $disk after $RETRIES_COUNT attempts"
