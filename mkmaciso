@@ -39,6 +39,7 @@ IMAGE_FORMAT="${2:-}"
 OUTPUT_PATH="${3:-}"
 RETRIES_COUNT=10
 FINAL_OUTPUT_PATH=""
+DISK_ID=""
 
 # Color codes for output
 RED='\033[0;31m'
@@ -47,6 +48,9 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
+
+# Run on macOS only
+[ "$(uname -s)" != "Darwin" ] && echo "Error: macOS only" && exit 1
 
 # Helper functions
 log_info() {
@@ -230,11 +234,11 @@ get_installer_app_name() {
 print_header() {
     clear
     echo -e "${BOLD}${CYAN}"
-    echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-    echo "║ mkmaciso - the ultimate macOS utility for creating macOS installer ISO and DMG images║"
-    echo "║══════════════════════════════════════════════════════════════════════════════════════║"
-    echo "║                                   Interactive mode                                   ║"
-    echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+    echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║ mkmaciso – the ultimate tool for creating macOS installer ISO and DMG images ║"
+    echo "╠══════════════════════════════════════════════════════════════════════════════╣"
+    echo "║                               Interactive mode                               ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
 
@@ -525,6 +529,10 @@ download_legacy_macos() {
         "10.8")
             download_url="$MOUNTAIN_LION_URL"
             ;;
+        "10.9")
+            download_mavericks
+            return
+            ;;
         "10.10")
             download_url="$YOSEMITE_URL"
             ;;
@@ -541,8 +549,8 @@ download_legacy_macos() {
     esac
     
     log_info "Downloading macOS $(get_codename $version_num)..."
-    # If download does not finish within 20 minutes (--max-time 1200), redownload to establish a new connection, which may result in faster speeds.
-    curl --retry 5 --retry-all-errors --max-time 1200 --connect-timeout 10 --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
+    # If download does not finish within 30 minutes (--max-time 1800), redownload to establish a new connection.
+    curl --retry 5 --retry-all-errors --max-time 1800 --connect-timeout 10 --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
 }
 
 # macOS 10.9 Mavericks requires special handling:
@@ -593,29 +601,73 @@ k=$key")
     echo ""
     log_info "Downloading macOS Mavericks using special method..."
     
-    # Download Mavericks InstallESD.dmg and cache it in /Applications to avoid redownload in the future
-    # If download does not finish within 20 minutes (--max-time 1200), redownload to establish a new connection, which may result in faster speeds.
-    curl --retry 5 --retry-all-errors --max-time 1200 --connect-timeout 10 --progress-bar "$mavericks_url" -H "Cookie: AssetToken=$token" -o "$WORK_DIR/InstallESD.dmg" && mkdir -p "/Applications/Install OS X Mavericks.app/Contents/SharedSupport"
-
-    if [ -d "/Applications/Install OS X Mavericks.app/Contents/SharedSupport" ]; then
-        mv -f "$WORK_DIR/InstallESD.dmg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/InstallESD.dmg"
-    fi
+    # Download Mavericks InstallESD.dmg
+    # If download does not finish within 30 minutes (--max-time 1800), redownload to establish a new connection.
+    curl --retry 5 --retry-all-errors --max-time 1800 --connect-timeout 10 --progress-bar -L "$mavericks_url" -H "Cookie: AssetToken=$token" -o "$WORK_DIR/InstallESD.dmg"
 }
 
 install_legacy_app() {
     local version_num="$1"
     local dmg_file="$2"
+    local cpu_arch=$(uname -m)
     
     log_info "Installing macOS $(get_codename $version_num) installer to /Applications..."
     
-    # Mount the downloaded DMG
-    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/installer_mnt" "$dmg_file"
+    # Check if version is in the legacy list
+    if [[ "$version_num" =~ ^(10\.7|10\.8|10\.10|10\.11|10\.12)$ ]]; then
+        # Mount the  DMG
+        hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/installer_mnt" "$dmg_file"
+        
+        # Manual installation process for Apple silicon
+        if [ "$cpu_arch" == "arm64" ]; then
+            log_info "Apple silicon detected, using manual installation..."
+            
+            # Extract the package
+            pkgutil --expand "$WORK_DIR/installer_mnt"/*.pkg "$WORK_DIR/pkg_extracted"
+            
+            # Find the inner package directory (InstallMacOSX.pkg)
+            local inner_pkg=$(ls -d "$WORK_DIR/pkg_extracted"/*.pkg 2>/dev/null | head -1)
+            
+            # Extract the app from Payload to /Applications
+            cd /Applications
+            sudo cpio -idm < "$inner_pkg/Payload"
+            cd - > /dev/null
+            
+            # Copy InstallESD.dmg
+            local app_path="/Applications/$(get_installer_app_name $version_num).app"
+            sudo cp "$inner_pkg/InstallESD.dmg" "$app_path/Contents/SharedSupport/InstallESD.dmg"
+            sudo chown root:wheel "$app_path/Contents/SharedSupport/InstallESD.dmg"
+            
+            log_info "Installed $(get_installer_app_name $version_num) to /Applications"
+        else
+            # Standard installation for Intel Macs
+            sudo installer -pkg "$WORK_DIR/installer_mnt"/*.pkg -target / && \
+                log_info "Installed $(get_installer_app_name $version_num) to /Applications"
+        fi
+        
+        sync && detach_disk "$WORK_DIR/installer_mnt"
     
-    # Install the package
-    sudo installer -pkg "$WORK_DIR/installer_mnt"/*.pkg -target /
-    
-    # Unmount
-    sync && detach_disk "$WORK_DIR/installer_mnt"
+    elif [ "$version_num" == "10.9" ]; then
+        # Check if InstallESD.dmg exists
+        if [ -f "$WORK_DIR/InstallESD.dmg" ]; then
+            # Mount InstallESD.dmg and BaseSystem.dmg inside it
+            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/install_esd_mnt" "$WORK_DIR/InstallESD.dmg"
+            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/base_system_mnt" "$WORK_DIR/install_esd_mnt/BaseSystem.dmg"
+            
+            # Copy required files
+            sudo cp -a "$WORK_DIR/base_system_mnt/Install OS X Mavericks.app" "/Applications/"
+            sudo mkdir "/Applications/Install OS X Mavericks.app/Contents/SharedSupport"
+            sudo cp -a "$WORK_DIR/InstallESD.dmg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/InstallESD.dmg"
+            sudo cp -a "$WORK_DIR/install_esd_mnt/Packages/OSInstall.mpkg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/"
+            sudo chown -R root:wheel "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/"
+            
+            log_info "Installed $(get_installer_app_name $version_num) to /Applications"
+            
+            # Unmount
+            sync && detach_disk "$WORK_DIR/base_system_mnt"
+            sync && detach_disk "$WORK_DIR/install_esd_mnt"
+        fi
+    fi
 }
 
 download_modern_macos() {
@@ -628,35 +680,6 @@ download_modern_macos() {
     
     # Get current macOS kernel version
     local kernel_version=$(uname -r | cut -d'.' -f1)
-    
-    # Convert kernel version to macOS version number
-    local current_macos_version=""
-    case "$kernel_version" in
-        8) current_macos_version="10.4" ;;
-        9) current_macos_version="10.5" ;;
-        10) current_macos_version="10.6" ;;
-        11) current_macos_version="10.7" ;;
-        12) current_macos_version="10.8" ;;
-        13) current_macos_version="10.9" ;;
-        14) current_macos_version="10.10" ;;
-        15) current_macos_version="10.11" ;;
-        16) current_macos_version="10.12" ;;
-        17) current_macos_version="10.13" ;;
-        18) current_macos_version="10.14" ;;
-        19) current_macos_version="10.15" ;;
-        20) current_macos_version="11" ;;
-        21) current_macos_version="12" ;;
-        22) current_macos_version="13" ;;
-        23) current_macos_version="14" ;;
-        24) current_macos_version="15" ;;
-        25) current_macos_version="26" ;;
-        27) current_macos_version="27" ;;
-        *) current_macos_version="unknown" ;;
-    esac
-    
-    current_macos_codename=$(get_codename $current_macos_version)
-    
-    log_info "Current macOS version: ${CYAN}$current_macos_codename ${NC}"
     
     # Extract major version from version_num for comparison
     local requested_major_version
@@ -674,32 +697,28 @@ download_modern_macos() {
         # Check if current system is at least macOS 11 (kernel 20)
         if [ "$kernel_version" -lt 20 ]; then
             log_error "Intel Macs must be running macOS 11 (Big Sur) or newer to download macOS using softwareupdate"
-            log_error "Current macOS version: $current_macos_codename"
             log_error "Please upgrade your macOS to version 11 or newer"
             return 1
         fi
         
     elif [ "$cpu_arch" == "arm64" ]; then
-        log_info "Apple Silicon detected"
+        log_info "Apple silicon detected"
+        
+        # Show warning on Apple silicon
+        log_warn "╔══════════════════════════════════════════════════════════════════╗"
+        log_warn "║                     Apple silicon Limitation                     ║"
+        log_warn "╠══════════════════════════════════════════════════════════════════╣"
+        log_warn "║ On Apple silicon, softwareupdate cannot download macOS versions  ║"
+        log_warn "║ older than the one that originally shipped with your device.     ║"
+        log_warn "╚══════════════════════════════════════════════════════════════════╝"
         
         # Check if requested version is older than macOS 11
         if [[ "$version_num" =~ ^10\. ]]; then
-            log_error "Apple Silicon Macs cannot download macOS versions older than 11 (Big Sur)"
+            log_error "Apple silicon Macs cannot download macOS 10.13 - 10.15 using softwareupdate."
+            log_error "Please use gibMacOS to download macOS $version_name, or request macOS 11 (Big Sur) or a newer version."
             log_error "Requested version: $version_name"
-            log_error "Please request macOS 11 or newer"
             return 1
         fi
-        
-        # For macOS 11 or newer on Apple silicon, show warning
-        log_warn "╔════════════════════════════════════════════════════════════════════╗"
-        log_warn "║                     Apple Silicon Limitation                       ║"
-        log_warn "╠════════════════════════════════════════════════════════════════════╣"
-        log_warn "║ On Apple Silicon, softwareupdate cannot download macOS versions    ║"
-        log_warn "║ older than the one that originally shipped with your device.       ║"
-        log_warn "╚════════════════════════════════════════════════════════════════════╝"
-    else
-        log_error "Unknown CPU architecture: $cpu_arch"
-        return 1
     fi
     
     log_info "Fetching available macOS installers..."
@@ -949,12 +968,31 @@ create_dmg_10_10_and_later() {
     local installer_path="$1"
     local output_file="$2"
     local version_num="$3"
-    
     log_info "Creating macOS $(get_codename $version_num) DMG image..."
     echo ""
     
+    # Determine DMG size based on macOS version
+    local dmg_size
+    case "$version_num" in
+        10.10|10.11|10.12|10.13|10.14)
+            dmg_size="7g"
+            ;;
+        10.15)
+            dmg_size="9g"
+            ;;
+        11|12|13)
+            dmg_size="15g"
+            ;;
+        14|15)
+            dmg_size="18g"
+            ;;
+        *)
+            dmg_size="20g"
+            ;;
+    esac
+    
     # Create DMG disk image
-    hdiutil create -size 20g -volname "$(get_codename $version_num)_dmg" -fs HFS+ -type UDIF -attach "$WORK_DIR/installer.dmg" >/dev/null 2>&1
+    hdiutil create -size $dmg_size -volname "$(get_codename $version_num)_dmg" -fs HFS+ -type UDIF -attach "$WORK_DIR/installer.dmg" >/dev/null 2>&1
     DISK_ID=$(diskutil list | grep $(get_codename $version_num)_dmg | head -1 | awk '{print $NF}' | sed 's/s[0-9]*$//')
     
     # Prepare createinstallmedia command
@@ -984,7 +1022,7 @@ create_dmg_10_10_and_later() {
         sudo /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString '12.6.06'" "/Volumes/Install macOS Sierra/Install macOS Sierra.app/Contents/Info.plist"
     fi
     
-    log_info "Starting DMG file size optimization technique"
+    log_info "Starting DMG file size optimization..."
     
     # Check minimum size requirements
     MIN_SIZE=$(diskutil resizeVolume ${DISK_ID}s2 limits | grep "Minimum (constrained by file usage)" | sed 's/.*(\([0-9]*\) Bytes)/\1/')
@@ -1032,9 +1070,9 @@ create_dmg_10_10_and_later() {
 # Main script
 main() {
     echo -e "${BOLD}${CYAN}"
-    echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-    echo "║ mkmaciso - the ultimate macOS utility for creating macOS installer ISO and DMG images║"
-    echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+    echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║ mkmaciso – the ultimate tool for creating macOS installer ISO and DMG images ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
     # Check for availble disk space
@@ -1050,11 +1088,6 @@ main() {
     elif [[ "$IMAGE_FORMAT" != "iso" && "$IMAGE_FORMAT" != "dmg" ]]; then
         log_warn "Invalid image format '$IMAGE_FORMAT'; falling back to dmg"
         IMAGE_FORMAT="dmg"
-    fi
-    
-    # Default VERSION to 26 (Tahoe) if empty
-    if [ -z "$VERSION" ]; then
-        VERSION="26"
     fi
     
     # Normalize version input
@@ -1105,15 +1138,15 @@ main() {
     echo ""
     
     # Check if trying to install legacy macOS on ARM64
-    if [[ "$VERSION_NUM" =~ ^10\.(7|8|9|10|11|12)$ ]]; then
-        local cpu_arch=$(uname -m)
-        if [ "$cpu_arch" == "arm64" ]; then
-            log_error "Cannot create installer for macOS $VERSION_NUM on Apple silicon"
-            log_error "Legacy macOS installers (10.7-10.12) require Intel (x86_64) Macs"
-            log_error "Please use an Intel Mac to create installers for these versions"
-            exit 1
-        fi
-    fi
+#    if [[ "$VERSION_NUM" =~ ^10\.(7|8|9|10|11|12)$ ]]; then
+#        local cpu_arch=$(uname -m)
+#        if [ "$cpu_arch" == "arm64" ]; then
+#            log_error "Cannot create installer for macOS $VERSION_NUM on Apple silicon"
+#            log_error "Legacy macOS installers (10.7-10.12) require Intel (x86_64) Macs"
+#            log_error "Please use an Intel Mac to create installers for these versions"
+#            exit 1
+#        fi
+#    fi
     
     # Create work directory
     WORK_DIR=$(mktemp -d)
@@ -1123,24 +1156,15 @@ main() {
     # Check if installer already exists
     INSTALLER_PATH=$(echo /Applications/$(get_installer_app_name "$VERSION_NUM").app)
     
-    if [ "$VERSION_NUM" == "10.9" ]; then
-        # Mavericks special handling
-        if [ -d "$INSTALLER_PATH" ]; then
-            log_info "Found existing Mavericks installer at:${CYAN} $INSTALLER_PATH ${NC}"
-            echo ""
-        else
-            download_mavericks
-            echo ""
-        fi
-    elif [ -n "$INSTALLER_PATH" ] && [ -d "$INSTALLER_PATH" ]; then
+    if [ -n "$INSTALLER_PATH" ] && [ -d "$INSTALLER_PATH" ]; then
         log_info "Found existing installer at:${CYAN} $INSTALLER_PATH ${NC}"
         echo ""
     else
         log_info "Installer not found, downloading..."
         
         # Download and install
-        if [[ "$VERSION_NUM" =~ ^10\.(7|8|10|11|12)$ ]]; then
-            # Legacy macOS versions (not Mavericks)
+        if [[ "$VERSION_NUM" =~ ^10\.(7|8|9|10|11|12)$ ]]; then
+            # Legacy macOS versions
             download_legacy_macos "$VERSION_NUM"
             install_legacy_app "$VERSION_NUM" "$WORK_DIR/InstallMacOSX.dmg"
         else
@@ -1219,9 +1243,9 @@ main() {
 
 # Show usage if -h or --help is passed
 if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
-    echo "╔══════════════════════════════════════════════════════════════════════════════════════╗"
-    echo "║ mkmaciso - the ultimate macOS utility for creating macOS installer ISO and DMG images║"
-    echo "╚══════════════════════════════════════════════════════════════════════════════════════╝"
+    echo "╔══════════════════════════════════════════════════════════════════════════════╗"
+    echo "║ mkmaciso – the ultimate tool for creating macOS installer ISO and DMG images ║"
+    echo "╚══════════════════════════════════════════════════════════════════════════════╝"
     echo ""
     echo "Usage: $0 [VERSION] [FORMAT] [OUTPUT_PATH]"
     echo "       $0       # Run with no arguments to enter interactive mode"
@@ -1270,3 +1294,4 @@ fi
 
 # Run main function
 main
+
