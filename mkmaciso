@@ -117,9 +117,11 @@ detach_disk() {
 cleanup() {
     # Only clean up if WORK_DIR is defined and not root/home
     if [ -n "$WORK_DIR" ] && [ "$WORK_DIR" != "/" ] && [ -d "$WORK_DIR" ]; then
-        if [ -n "$DISK_ID" ]; then
-            detach_disk "$DISK_ID"
-        fi
+        # Unmount
+        for mnt in "$WORK_DIR"/*_mnt; do
+            [ -d "$mnt" ] && detach_disk "$mnt" 2>/dev/null || true
+        done
+
         log_info "Cleaning up temporary files..."
         sudo rm -rf "$WORK_DIR"
     fi
@@ -556,7 +558,6 @@ download_legacy_macos() {
 # macOS 10.9 Mavericks requires special handling:
 # 1. Must use Apple's recovery server protocol to download
 # 2. Requires specific hardware identifiers for authentication
-# 3. Have different InstallESD.dmg structure than other versions
 # Reference: https://mavericksforever.com/get.sh
 
 download_mavericks() {
@@ -705,12 +706,12 @@ download_modern_macos() {
         log_info "Apple silicon detected"
         
         # Show warning on Apple silicon
-        log_warn "╔══════════════════════════════════════════════════════════════════╗"
-        log_warn "║                     Apple silicon Limitation                     ║"
-        log_warn "╠══════════════════════════════════════════════════════════════════╣"
-        log_warn "║ On Apple silicon, softwareupdate cannot download macOS versions  ║"
-        log_warn "║ older than the one that originally shipped with your device.     ║"
-        log_warn "╚══════════════════════════════════════════════════════════════════╝"
+        log_warn "╔═════════════════════════════════════════════════════════════════╗"
+        log_warn "║                     Apple silicon Limitation                    ║"
+        log_warn "╠═════════════════════════════════════════════════════════════════╣"
+        log_warn "║ On Apple silicon, softwareupdate cannot download macOS versions ║"
+        log_warn "║ older than the one that originally shipped with your device.    ║"
+        log_warn "╚═════════════════════════════════════════════════════════════════╝"
         
         # Check if requested version is older than macOS 11
         if [[ "$version_num" =~ ^10\. ]]; then
@@ -1289,9 +1290,17 @@ fi
 
 # Check if running in interactive mode (no parameters)
 if [ $# -eq 0 ]; then
+    if [ -p /dev/stdin ] || [ ! -t 0 ]; then
+        log_error "Interactive mode unavailable when piped"
+        log_info "Usage: curl -sL <URL> | bash -s <VERSION> [FORMAT] [OUTPUT]"
+        echo ""
+        log_info "Example: curl -sL <URL> | bash -s 26"
+        log_info "Example: curl -sL <URL> | bash -s 26 dmg"
+        log_info "Example: curl -sL <URL> | bash -s 26 iso ~/Desktop/Tahoe.iso"
+        exit 1
+    fi
     run_interactive_menu
 fi
 
 # Run main function
 main
-
