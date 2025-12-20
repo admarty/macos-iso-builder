@@ -15,9 +15,9 @@
 > [!IMPORTANT]
 > * Use the **"Build macOS Recovery ISO image"** workflow unless you really need an offline installer.
 > * GitHub-hosted runners are a free public resource — please use them responsibly.
-> * Already have macOS? Build macOS installer ISO/DMG image with this command (replace `tahoe` with the desired version):
+> * If you already have macOS VM, you can build macOS ISO/DMG image using the following command (replace `tahoe` with your desired version):
 ```
-curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
+curl -sL https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
 ```
 
 ---
@@ -27,7 +27,7 @@ curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkma
 1. **Fork** this repository.
 2. Go to the **Actions** tab in your forked repository.
 3. Click the green button **"I understand my workflows, go ahead and enable them"**.
-4. Select the **"Build macOS Installer ISO/DMG image"** or **"Build macOS Recovery ISO image"** workflow from the left sidebar..
+4. Select the **"Build macOS Installer ISO/DMG image"** or **"Build macOS Recovery ISO image"** workflow from the left sidebar.
 5. Click the **"Run workflow"** button.
 6. Configure the workflow inputs:
 
@@ -37,8 +37,6 @@ curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkma
 8. Wait for the workflow to complete (this may take 10-60 minutes).
 9. Open the completed workflow run and scroll to the **Artifacts** section.
 10. Download the artifact (e.g., `macOS_Sequoia_15.7.3.iso`).
-> [!TIP]
-> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads.
 11. Extract the ZIP file to get your `.iso` or `.dmg` file.
 
 ---
@@ -46,9 +44,9 @@ curl -L https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkma
 > [!TIP]
 > To create a bootable macOS installer USB drive on Windows:
 > 1. Open [Rufus](https://rufus.ie/en/#download)
-> 2. Click **SELECT**, change the filter to **"All files"**, then select your macOS `.dmg`
+> 2. Click **SELECT**, then select your macOS `.dmg.iso` image
 > 3. Click **START**
-> 4. Optional: After flashing the `dmg` image to the USB drive, there will be free/unallocated space remaining on the USB drive. Use Disk Management to create a new FAT32 partition and place your EFI folder there if needed.
+> 4. Optional: After flashing the DMG image to the USB drive, there will be free/unallocated space remaining on the USB drive. Use Disk Management to create a new FAT32 partition and place your EFI folder there if needed.
 
 > [!NOTE]
 > By default, artifacts are kept for 7 days. You can change this in the workflow YAML file.

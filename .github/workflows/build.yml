@@ -24,7 +24,7 @@ on:
           - 'Mountain Lion'
           - 'Lion'
       image_format:
-        description: 'Select image format: iso for virtual machines, dmg for burning to USB drive'
+        description: 'Select image format: iso for virtual machines, dmg for flash to USB drive'
         required: true
         type: choice
         options:
@@ -48,18 +48,19 @@ jobs:
           df -h
           echo "Memory:"
           top -l 1 | grep PhysMem
+          echo "CPU model:"
+          sysctl -a | grep dep.cpu.brand_string
 
-      - name: Create Image
+      - name: Create macOS image
         id: create_image
+        continue-on-error: true
         run: |
           if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
-            echo "Creating macOS ${{ github.event.inputs.macos_version }} ISO image"
-            bash mkmaciso "${{ github.event.inputs.macos_version }}"
+            sudo bash mkmaciso "${{ github.event.inputs.macos_version }}"
             echo "image_name=$(basename *.iso)" >> $GITHUB_OUTPUT
           else
-            echo "Creating macOS ${{ github.event.inputs.macos_version }} DMG image"
-            bash mkmaciso "${{ github.event.inputs.macos_version }}" dmg
-            echo "image_name=$(basename *.dmg)" >> $GITHUB_OUTPUT
+            sudo bash mkmaciso "${{ github.event.inputs.macos_version }}" dmg
+            echo "image_name=$(basename *.dmg.iso)" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload ISO artifact
@@ -76,21 +77,31 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.create_image.outputs.image_name }}
-          path: ./*.dmg
+          path: ./*.dmg.iso
           compression-level: 0
           retention-days: 7
 
       - name: Summary
+        if: always()
         run: |
-          if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
-            echo "## Successfully built $(basename *.iso)" >> $GITHUB_STEP_SUMMARY
-            echo "Note: This ISO is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## Successfully built $(basename *.dmg)" >> $GITHUB_STEP_SUMMARY
-            echo 'Note: This DMG is intended for flash to USB drive using [Rufus](https://rufus.ie/en/#download) (Windows) or dd (Linux)' >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.create_image.outcome }}" == "failure" ]; then
+            echo "## Download macOS failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
+            echo "> This runner may have network issues. Please **re-run the workflow** to try a different runner." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ job.status }}" == "success" ]; then
+            if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
+              echo "## Successfully built $(basename *.iso)" >> $GITHUB_STEP_SUMMARY
+              echo "Note: This ISO image is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
+            else
+              echo "## Successfully built $(basename *.dmg.iso)" >> $GITHUB_STEP_SUMMARY
+              echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
+              echo '> This DMG image is intended for flash to USB drive using [Rufus](https://rufus.ie/en/#download) (Windows) or dd (Linux)' >> $GITHUB_STEP_SUMMARY
+              echo '> Can also be used with virtual machines (require convert to `.vhd` for Hyper-V or `.vmdk` for VMware)' >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Found this useful? [Give it a ⭐ star](https://github.com/LongQT-sea/macos-iso-builder) so others can find it too!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
+            echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Found this useful? Give it a ⭐ star so others can find it too! https://github.com/LongQT-sea/macos-iso-builder" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
-          echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
