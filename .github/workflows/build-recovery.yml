@@ -43,6 +43,8 @@ jobs:
           python3 --version
 
       - name: Download macrecovery.py
+        id: download_recovery_image
+        continue-on-error: true
         run: |
           echo "Downloading macrecovery.py from acidanthera/OpenCorePkg..."
           curl -OL "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Utilities/macrecovery/macrecovery.py"
@@ -216,11 +218,19 @@ jobs:
             ${{ steps.compress_iso.outputs.compressed_file }}
 
       - name: Summary
+        if: always()
         run: |
-          echo "## Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
-          echo "Note: This ISO is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Found this useful? Give it a ⭐ star so others can find it too! https://github.com/LongQT-sea/macos-iso-builder" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
-          echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.download_recovery_image.outcome }}" == "failure" ]; then
+            echo "## Download RecoveryOS failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
+            echo "> This runner may have network issues. Please **re-run the workflow** to try a different runner." >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ job.status }}" == "success" ]; then
+            echo "## Successfully built **macOS ${{ steps.version_info.outputs.version_name }} Recovery** ISO" >> $GITHUB_STEP_SUMMARY
+            echo "Note: This ISO image is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Found this useful? [Give it a ⭐ star](https://github.com/LongQT-sea/macos-iso-builder) so others can find it too!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
+            echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
+          fi
