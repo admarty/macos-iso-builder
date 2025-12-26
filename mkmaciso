@@ -23,7 +23,7 @@
 #   - Most VMM require convert the .dmg image to a compatible virtual disk format using qemu-img,
 #       e.g. convert to .vhd for Hyper-V or .vmdk for VMware. QEMU can use raw disk image without conversion.
 #
-# For easier use and distribution, the final DMG image will have '.iso' appended to its file name.
+# For easier use and distribution, the final DMG image will have '.img' appended to its file name.
 # Rufus no longer require switching to "All files" to saw the DMG image in Explorer.
 # Also fix "qemu-img: Could not locate UDIF trailer in dmg file" error.
 #
@@ -42,9 +42,9 @@ SIERRA_URL="http://updates-http.cdn-apple.com/2019/cert/061-39476-20191023-48f36
 
 # Official Apple download URLs for macOS 10.13-10.15
 # https://swscan.apple.com/content/catalogs/others/index-15-14-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog
-CATALINA_BASE_URL=https://swcdn.apple.com/content/downloads/26/37/001-68446/r1dbqtmf3mtpikjnd04cq31p4jk91dceh8/
-MOJAVE_BASE_URL=https://swcdn.apple.com/content/downloads/17/32/061-26589-A_8GJTCGY9PC/25fhcu905eta7wau7aoafu8rvdm7k1j4el/
-HIGH_SIERRA_BASE_URL=https://swcdn.apple.com/content/downloads/06/50/041-91758-A_M8T44LH2AW/b5r4og05fhbgatve4agwy4kgkzv07mdid9/
+CATALINA_BASE_URL="https://swcdn.apple.com/content/downloads/26/37/001-68446/r1dbqtmf3mtpikjnd04cq31p4jk91dceh8/"
+MOJAVE_BASE_URL="https://swcdn.apple.com/content/downloads/17/32/061-26589-A_8GJTCGY9PC/25fhcu905eta7wau7aoafu8rvdm7k1j4el/"
+HIGH_SIERRA_BASE_URL="https://swcdn.apple.com/content/downloads/06/50/041-91758-A_M8T44LH2AW/b5r4og05fhbgatve4agwy4kgkzv07mdid9/"
 
 # Default parameters
 VERSION="${1:-}"
@@ -118,7 +118,6 @@ check_disk_space() {
     fi
 }
 
-
 detach_disk() {
     local disk="$1"
     [ -z "$disk" ] && return 0
@@ -138,7 +137,7 @@ detach_disk() {
 
 cleanup() {
     # Only clean up if WORK_DIR is defined and not root/home
-    if [ -n "$WORK_DIR" ] && [ "$WORK_DIR" != "/" ] && [ -d "$WORK_DIR" ]; then
+    if [ -n "$WORK_DIR" ] && [ -d "$WORK_DIR" ] && [ "$WORK_DIR" != "/" ] && [ "$WORK_DIR" != "$HOME" ]; then
         # Unmount
         for mnt in "$WORK_DIR"/*_mnt; do
             [ -d "$mnt" ] && detach_disk "$mnt" 2>/dev/null || true
@@ -680,21 +679,21 @@ install_legacy_app() {
         # Check if InstallESD.dmg exists
         if [ -f "$WORK_DIR/InstallESD.dmg" ]; then
             # Mount InstallESD.dmg and BaseSystem.dmg inside it
-            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/install_esd_mnt" "$WORK_DIR/InstallESD.dmg"
-            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/base_system_mnt" "$WORK_DIR/install_esd_mnt/BaseSystem.dmg"
+            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$WORK_DIR/InstallESD.dmg"
+            hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/BaseSystem_mnt" "$WORK_DIR/InstallESD_mnt/BaseSystem.dmg"
             
             # Copy required files
-            sudo cp -a "$WORK_DIR/base_system_mnt/Install OS X Mavericks.app" "/Applications/"
+            sudo cp -a "$WORK_DIR/BaseSystem_mnt/Install OS X Mavericks.app" "/Applications/"
             sudo mkdir "/Applications/Install OS X Mavericks.app/Contents/SharedSupport"
             sudo cp -a "$WORK_DIR/InstallESD.dmg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/InstallESD.dmg"
-            sudo cp -a "$WORK_DIR/install_esd_mnt/Packages/OSInstall.mpkg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/"
+            sudo cp -a "$WORK_DIR/InstallESD_mnt/Packages/OSInstall.mpkg" "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/"
             sudo chown -R root:wheel "/Applications/Install OS X Mavericks.app/Contents/SharedSupport/"
             
             log_info "Installed $(get_installer_app_name $version_num) to /Applications"
             
             # Unmount
-            sync && detach_disk "$WORK_DIR/base_system_mnt"
-            sync && detach_disk "$WORK_DIR/install_esd_mnt"
+            sync && detach_disk "$WORK_DIR/BaseSystem_mnt"
+            sync && detach_disk "$WORK_DIR/InstallESD_mnt"
         fi
     fi
 }
@@ -703,21 +702,17 @@ install_legacy_app() {
 direct_download_10_13_10_15() {
     local version_num="$1"
     local base_url=""
-    local version_name=""
     
     # Determine base URL and version name
     case "$version_num" in
         "10.13")
             base_url="$HIGH_SIERRA_BASE_URL"
-            version_name="High Sierra"
             ;;
         "10.14")
             base_url="$MOJAVE_BASE_URL"
-            version_name="Mojave"
             ;;
         "10.15")
             base_url="$CATALINA_BASE_URL"
-            version_name="Catalina"
             ;;
         *)
             return 1
@@ -823,28 +818,24 @@ download_modern_macos() {
         fi
         
         # For Intel: use direct download if running kernel < 20 (pre-Big Sur)
-        if [ "$CPU_ARCH" == "x86_64" ]; then
+        if [ "$CPU_ARCH" = "x86_64" ] && [ "$kernel_version" -lt 20 ]; then
             log_info "Intel CPU detected"
-            
-            if [ "$kernel_version" -lt 20 ]; then
-                log_info "This Mac is running a version older than Big Sur, will attempt direct download"
-                direct_download_10_13_10_15 "$version_num"
-                return $?
-            fi
+            log_info "This Mac is running a version older than Big Sur, will attempt direct download for macOS $version_name"
+            direct_download_10_13_10_15 "$version_num"
+            return $?
         fi
+    
     fi
     
-    # For macOS 11+ or when running Big Sur+, use softwareupdate
+    # Use softwareupdate for macOS Big Sur and newer
     # Check CPU architecture compatibility for softwareupdate
-    if [ "$CPU_ARCH" == "x86_64" ]; then
+    if [ "$CPU_ARCH" = "x86_64" ] && [ "$kernel_version" -lt 20 ]; then
         log_info "Intel CPU detected"
         
         # Intel Macs require macOS 11 or newer for softwareupdate
-        if [ "$kernel_version" -lt 20 ]; then
-            log_error "Intel Macs must be running macOS 11 (Big Sur) or newer to download macOS using softwareupdate"
-            log_error "Please upgrade your macOS to version 11 or newer"
-            return 1
-        fi
+        log_error "Intel Macs must be running macOS 11 (Big Sur) or newer to download macOS using softwareupdate"
+        log_error "Please upgrade your macOS to version 11 or newer"
+        return 1
         
     elif [ "$CPU_ARCH" == "arm64" ]; then
         log_info "Apple silicon detected"
@@ -860,12 +851,6 @@ download_modern_macos() {
     
     log_info "Fetching available macOS installers..."
     softwareupdate --list-full-installers 2>/dev/null | grep "* Title:" | sed 's/^[[:space:]]*//' > $WORK_DIR/installers.txt
-    
-    if [ ! -s $WORK_DIR/installers.txt ]; then
-        log_error "Failed to fetch installer list"
-        log_error "This feature requires macOS Big Sur or newer"
-        return 1
-    fi
     
     # Get latest installer version
     local selected_version_number=$(grep -i "$version_name" $WORK_DIR/installers.txt | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
@@ -919,13 +904,13 @@ create_iso_dmg_10_7_10_8() {
         # Create DMG with GUID Partition Table from mounted InstallESD.dmg
         sudo hdiutil create -quiet -layout GPTSPUD -format UDRW -ov -volname "$volume_name" -srcdir "$WORK_DIR/InstallESD_mnt" "$FINAL_OUTPUT_PATH"
         
-        # Append .iso extension
-        mv -f "$FINAL_OUTPUT_PATH" "${FINAL_OUTPUT_PATH}.iso"
+        # Append .img extension
+        mv -f "$FINAL_OUTPUT_PATH" "${FINAL_OUTPUT_PATH}.img"
+        FINAL_OUTPUT_PATH="${FINAL_OUTPUT_PATH}.img"
         
         # Unmount
         sync && detach_disk "$WORK_DIR/InstallESD_mnt"
         
-        FINAL_OUTPUT_PATH="${FINAL_OUTPUT_PATH}.iso"
     else
         # Unmount
         sync && detach_disk "$WORK_DIR/InstallESD_mnt"
@@ -944,12 +929,10 @@ create_iso_10_9_10_11() {
     log_info "Creating macOS $(get_codename $version_num) ISO image..."
     
     # Mount InstallESD.dmg
-    local installesd_path="$installer_path/Contents/SharedSupport/InstallESD.dmg"
-    
-    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installesd_path"
+    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installer_path/Contents/SharedSupport/InstallESD.dmg"
     
     # Convert BaseSystem.dmg
-    hdiutil convert -quiet "$WORK_DIR/InstallESD_mnt/BaseSystem.dmg" -format UDRW -o "$WORK_DIR/BaseSystem_converted.dmg" >/dev/null 2>&1
+    hdiutil convert -quiet "$WORK_DIR/InstallESD_mnt/BaseSystem.dmg" -format UDRW -o "$WORK_DIR/BaseSystem_converted.dmg"
     
     # Increase size
     sudo hdiutil resize -size 7.1g "$WORK_DIR/BaseSystem_converted.dmg"
@@ -995,9 +978,7 @@ create_dmg_10_9_to_10_12_alt_method() {
     echo ""
     
     # Mount InstallESD.dmg
-    local installesd_path="$installer_path/Contents/SharedSupport/InstallESD.dmg"
-    
-    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installesd_path"
+    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installer_path/Contents/SharedSupport/InstallESD.dmg"
 	
     if [[ "$version_num" =~ ^(10\.9|10\.10)$ ]]; then
         # Attach BaseSystem.dmg
@@ -1049,7 +1030,7 @@ create_dmg_10_9_to_10_12_alt_method() {
     
     # Extract the exact version number and append it to the file name
     local exact_version_number=$(defaults read "$WORK_DIR/installer_mnt/System/Library/CoreServices/SystemVersion" ProductVersion)
-    FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.iso"
+    FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.img"
     
 	sync && sleep 5
 	
@@ -1079,9 +1060,7 @@ create_iso_dmg_10_15_alt_method() {
     echo ""
     
     # Mount InstallESD.dmg
-    local installesd_path="$installer_path/Contents/SharedSupport/InstallESD.dmg"
-    
-    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installesd_path"
+    hdiutil attach -nobrowse -quiet -mountpoint "$WORK_DIR/InstallESD_mnt" "$installer_path/Contents/SharedSupport/InstallESD.dmg"
     
     # Convert BaseSystem.dmg
     local basesystem_path="$installer_path/Contents/SharedSupport/BaseSystem.dmg"
@@ -1104,7 +1083,7 @@ create_iso_dmg_10_15_alt_method() {
     # Extract the exact version number and append it to the file name
     local exact_version_number=$(defaults read "$WORK_DIR/BaseSystem_mnt/System/Library/CoreServices/SystemVersion" ProductVersion)
     if [ "$IMAGE_FORMAT" == "dmg" ]; then
-        FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.iso"
+        FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.img"
     else
         FINAL_OUTPUT_PATH="${output_file%.iso}_$exact_version_number.iso"
     fi
@@ -1305,7 +1284,7 @@ create_dmg_10_10_and_later() {
     
     # Extract the exact version number and append it to the file name
     local exact_version_number=$(defaults read "/Volumes/$(get_installer_app_name "$version_num")/System/Library/CoreServices/SystemVersion" ProductVersion)
-    FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.iso"
+    FINAL_OUTPUT_PATH="${output_file%.dmg}_$exact_version_number.dmg.img"
     
     # Unmount
     detach_disk "$DISK_ID" && DISK_ID=""

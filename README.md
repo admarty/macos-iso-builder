@@ -42,11 +42,7 @@ curl -sL https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkm
 ---
 
 > [!TIP]
-> To create a bootable macOS installer USB drive on Windows:
-> 1. Open [Rufus](https://rufus.ie/en/#download)
-> 2. Click **SELECT**, then select your macOS `.dmg.iso` image
-> 3. Click **START**
-> 4. Optional: After flashing the DMG image to the USB drive, there will be free/unallocated space remaining on the USB drive. Use Disk Management to create a new FAT32 partition and place your EFI folder there if needed.
+> After flashing the DMG image to the USB drive with [Rufus](https://rufus.ie/en/#download), there will be free/unallocated space remaining on the USB drive. Use Disk Management to create a new FAT32 partition and place your EFI folder there if needed.
 
 > [!NOTE]
 > By default, artifacts are kept for 7 days. You can change this in the workflow YAML file.

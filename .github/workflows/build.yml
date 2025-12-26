@@ -44,12 +44,12 @@ jobs:
         run: |
           echo "Runner OS: $(sw_vers -productName) $(sw_vers -productVersion)"
           echo "Architecture: $(uname -m)"
-          echo "Available disk space:"
-          df -h
-          echo "Memory:"
-          top -l 1 | grep PhysMem
-          echo "CPU model:"
-          sysctl -a | grep dep.cpu.brand_string
+          echo ""
+          df -h $(mktemp)
+          echo ""
+          echo "RAM: $(top -l 1 | grep PhysMem)"
+          echo ""
+          echo "CPU: $(sysctl -n machdep.cpu.brand_string)"
 
       - name: Create macOS image
         id: create_image
