@@ -57,6 +57,9 @@ DISK_ID=""
 # Get CPU architecture
 CPU_ARCH=$(uname -m)
 
+# Get current macOS kernel version
+KERNEL_VERSION=$(uname -r | cut -d'.' -f1)
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -66,7 +69,13 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 # Run on macOS only
-[ "$(uname -s)" != "Darwin" ] && echo "Error: macOS only" && exit 1
+[ "$(uname -s)" != "Darwin" ] && echo "${RED}Error: macOS only${NC}" && exit 1
+
+# Requires Mavericks (10.9) or newer to run this script
+if [ "$KERNEL_VERSION" -lt 13 ]; then
+  echo "${RED}Unsupported macOS version. Requires Mavericks (10.9) or newer${NC}"
+  exit 1
+fi
 
 # Helper functions
 log_info() {
@@ -154,7 +163,6 @@ cleanup() {
 
 trap cleanup EXIT
 
-# Version lookup functions
 get_version_number() {
     local codename="$1"
     case "$codename" in
@@ -577,7 +585,7 @@ download_legacy_macos() {
     
     log_info "Downloading macOS $(get_codename $version_num)..."
     # If download does not finish within 30 minutes (--max-time 1800), redownload to establish a new connection.
-    curl --retry 5 --retry-all-errors --max-time 1800 --connect-timeout 10 --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
+    curl --retry 5 --max-time 1800 --connect-timeout 10 --progress-bar -L "$download_url" -o "$WORK_DIR/InstallMacOSX.dmg"
 }
 
 # macOS 10.9 Mavericks requires special handling:
@@ -629,7 +637,7 @@ k=$key")
     
     # Download Mavericks InstallESD.dmg
     # If download does not finish within 30 minutes (--max-time 1800), redownload to establish a new connection.
-    curl --retry 5 --retry-all-errors --max-time 1800 --connect-timeout 10 --progress-bar -L "$mavericks_url" -H "Cookie: AssetToken=$token" -o "$WORK_DIR/InstallESD.dmg"
+    curl --retry 5 --max-time 1800 --connect-timeout 10 --progress-bar -L "$mavericks_url" -H "Cookie: AssetToken=$token" -o "$WORK_DIR/InstallESD.dmg"
 }
 
 install_legacy_app() {
@@ -735,7 +743,7 @@ direct_download_10_13_10_15() {
     # Download all required files
     for filename in "${files[@]}"; do
         log_info "Downloading ${filename}..."
-        curl --retry 5 --retry-all-errors --max-time 1800 --connect-timeout 10 --progress-bar \
+        curl --retry 5 --max-time 1800 --connect-timeout 10 --progress-bar \
             -L "${base_url}${filename}" -o "$WORK_DIR/${filename}"
         if [ $? -ne 0 ]; then
             log_error "Failed to download ${filename}"
@@ -795,9 +803,6 @@ download_modern_macos() {
     version_name=$(get_codename $version_num)
     version_name="${version_name/_/ }"
     
-    # Get current macOS kernel version
-    local kernel_version=$(uname -r | cut -d'.' -f1)
-    
     # Use direct download when softwareupdate is not available
     if [[ "$version_num" =~ ^10\.1[345]$ ]]; then
         # For Apple silicon: always use direct download for 10.13-10.15
@@ -818,7 +823,7 @@ download_modern_macos() {
         fi
         
         # For Intel: use direct download if running kernel < 20 (pre-Big Sur)
-        if [ "$CPU_ARCH" = "x86_64" ] && [ "$kernel_version" -lt 20 ]; then
+        if [ "$CPU_ARCH" = "x86_64" ] && [ "$KERNEL_VERSION" -lt 20 ]; then
             log_info "Intel CPU detected"
             log_info "This Mac is running a version older than Big Sur, will attempt direct download for macOS $version_name"
             direct_download_10_13_10_15 "$version_num"
@@ -829,7 +834,7 @@ download_modern_macos() {
     
     # Use softwareupdate for macOS Big Sur and newer
     # Check CPU architecture compatibility for softwareupdate
-    if [ "$CPU_ARCH" = "x86_64" ] && [ "$kernel_version" -lt 20 ]; then
+    if [ "$CPU_ARCH" = "x86_64" ] && [ "$KERNEL_VERSION" -lt 20 ]; then
         log_info "Intel CPU detected"
         
         # Intel Macs require macOS 11 or newer for softwareupdate
@@ -1368,7 +1373,7 @@ main() {
     echo ""
     
     # Create work directory
-    WORK_DIR=$(mktemp -d)
+    WORK_DIR=$(mktemp -d -t LongQT-sea)
     log_info "Working directory:${CYAN} $WORK_DIR ${NC}"
     echo ""
     
