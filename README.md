@@ -17,16 +17,18 @@
 > * GitHub-hosted runners are a free public resource — please use them responsibly.
 > * If you already have macOS VM, you can build macOS ISO/DMG image using the following command (replace `tahoe` with your desired version):
 ```
-curl -sL https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
+curl -s https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
 ```
 
 ---
 
 ## Usage
+> [!TIP]
+> Here is a GIF showing how to complete steps 1–7: [.github/how_to_fork_and_run_workflow.gif](https://github.com/LongQT-sea/macos-iso-builder/blob/main/.github/how_to_fork_and_run_workflow.gif)
 
-1. **Fork** this repository.
-2. Go to the **Actions** tab in your forked repository.
-3. Click the green button **"I understand my workflows, go ahead and enable them"**.
+1. **Fork** this repository (requires a GitHub account).
+2. Navigate to the **Actions** tab in your forked repository.
+3. Click the green **"I understand my workflows, go ahead and enable them"** button.
 4. Select the **"Build macOS Installer ISO/DMG image"** or **"Build macOS Recovery ISO image"** workflow from the left sidebar.
 5. Click the **"Run workflow"** button.
 6. Configure the workflow inputs:
@@ -34,10 +36,10 @@ curl -sL https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkm
    * **macOS version** – Choose a version (*Sequoia*, *Sonoma*, etc.).
    * **Image format** – Choose `iso` for virtual machines or `dmg` for bootable USB drives.
 7. Click the green **"Run workflow"** button to start the build.
-8. Wait for the workflow to complete (this may take 10-60 minutes).
-9. Open the completed workflow run and scroll to the **Artifacts** section.
+8. Wait for the workflow to complete (this may take 10–60 minutes).
+9. Open the completed workflow run and scroll down to the **Artifacts** section.
 10. Download the artifact (e.g., `macOS_Sequoia_15.7.3.iso`).
-11. Extract the ZIP file to get your `.iso` or `.dmg` file.
+11. Extract the ZIP file to get your `.iso` or `.dmg.img` file.
 
 ---
 
