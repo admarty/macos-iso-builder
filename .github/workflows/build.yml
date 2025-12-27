@@ -32,7 +32,7 @@ on:
           - 'dmg'
 
 jobs:
-  build-installer:
+  build-macos-installer-image:
     runs-on: macos-15-intel
     timeout-minutes: 70
 
@@ -56,7 +56,7 @@ jobs:
         continue-on-error: true
         run: |
           if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
-            sudo bash mkmaciso "${{ github.event.inputs.macos_version }}"
+            sudo bash mkmaciso "${{ github.event.inputs.macos_version }}" iso
             echo "image_name=$(basename *.iso)" >> $GITHUB_OUTPUT
           else
             sudo bash mkmaciso "${{ github.event.inputs.macos_version }}" dmg
@@ -64,7 +64,7 @@ jobs:
           fi
 
       - name: Upload ISO artifact
-        if: github.event.inputs.image_format == 'iso'
+        if: github.event.inputs.image_format == 'iso' && steps.create_image.outcome == 'success'
         uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.create_image.outputs.image_name }}
@@ -73,7 +73,7 @@ jobs:
           retention-days: 7
 
       - name: Upload DMG artifact
-        if: github.event.inputs.image_format == 'dmg'
+        if: github.event.inputs.image_format == 'dmg' && steps.create_image.outcome == 'success'
         uses: actions/upload-artifact@v5
         with:
           name: ${{ steps.create_image.outputs.image_name }}

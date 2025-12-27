@@ -24,7 +24,12 @@ curl -s https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkma
 
 ## Usage
 > [!TIP]
-> Here is a GIF showing how to complete steps 1–7: [.github/how_to_fork_and_run_workflow.gif](https://github.com/LongQT-sea/macos-iso-builder/blob/main/.github/how_to_fork_and_run_workflow.gif)
+> <details>
+> <summary>Click here to watch a GIF showing how to complete steps 1–7</summary>
+>
+> ![How to fork and run workflow](https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/.github/how_to_fork_and_run_workflow.gif)
+>
+> </details>
 
 1. **Fork** this repository (requires a GitHub account).
 2. Navigate to the **Actions** tab in your forked repository.
