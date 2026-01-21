@@ -8,7 +8,7 @@ A comprehensive toolkit for creating bootable macOS installer images, consisting
 ## Quick Start
 
 > [!Note]
-> **New users:** Before building, open [Release page](https://github.com/LongQT-sea/mkmaciso/releases) to see if someone already built what you need!
+> **New users:** Before building, open [Release page](https://github.com/LongQT-sea/mkmaciso/releases/tag/forks-list) to see if someone already built what you need!
 
 See [Usage Guide](#usage-guide) for detailed instructions.
 
@@ -72,7 +72,7 @@ Two methods are available:
 > <details>
 > <summary>Click here to watch a visual guide (GIF) showing steps 1-7</summary>
 >
-> ![How to fork and run workflow](https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/.github/how_to_fork_and_run_workflow.gif)
+> ![How to fork and run workflow](https://raw.githubusercontent.com/LongQT-sea/mkmaciso/main/.github/how_to_fork_and_run_workflow.gif)
 >
 > </details>
 
@@ -101,12 +101,12 @@ If you already have access to a working macOS system or macOS virtual machine, y
 
 **Quick run** (replace 'tahoe' with your desired version):
 ```bash
-curl -s https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso | bash -s tahoe
+curl -s https://raw.githubusercontent.com/LongQT-sea/mkmaciso/main/mkmaciso | bash -s tahoe
 ```
 
 **Download the script first, then run with parameters:**
 ```bash
-curl -O https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/mkmaciso
+curl -O https://raw.githubusercontent.com/LongQT-sea/mkmaciso/main/mkmaciso
 chmod +x mkmaciso
 
 ./mkmaciso --help
