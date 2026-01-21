@@ -1,0 +1,80 @@
+name: Refresh forks list
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  workflow_dispatch:
+
+jobs:
+  refresh-forks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Fetch fork data
+        id: fetch_forks
+        run: |
+          THIRTY_DAYS_AGO=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          
+          curl -s -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/forks?sort=newest&per_page=100" \
+            > forks.json
+          
+          jq --arg date "$THIRTY_DAYS_AGO" \
+            '[.[] | select(.created_at > $date) | {
+              owner: .owner.login,
+              name: .name,
+              html_url: .html_url,
+              created_at: .created_at,
+              updated_at: .updated_at
+            }]' forks.json > recent_forks.json
+      
+      - name: Generate Forks content
+        run: |
+          CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
+          
+          cat > release_notes.md << 'EOF'
+          ## How to Use This List
+          
+          1. Sign in to your GitHub account https://github.com/login
+          2. Browse links in the list below to find the image you need
+          3. Click on a successful workflow runs (green checkmark)
+          4. Scroll down to **Artifacts** section to download it
+          
+          ---
+          
+          ## Recently Active Forks
+          
+          | Recent Fork | Created | Last Activity |
+          |-------------|---------|---------------|
+          EOF
+          
+          jq -r '.[] | "| [\(.owner)/\(.name)](https://github.com/\(.owner)/\(.name)/actions) | \(.created_at[:10]) | \(.updated_at[:10]) |"' recent_forks.json >> release_notes.md
+          
+          cat >> release_notes.md << EOF
+          
+          ---
+          
+          * **Last updated:** ${CURRENT_TIME}
+          
+          * **Auto-updates:** This list refreshes every 6 hours
+          
+          ---
+          
+          ### Can't Find What You Need?
+          
+          If none of the recent forks have the macOS version you need:
+          1. [Fork this repository](../../fork)
+          2. Follow the [Usage Guide](../../#usage-guide) to build your own image
+          3. Your fork will appear here for others to benefit from!
+          EOF
+      
+      - name: Update release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit forks-list --notes-file release_notes.md
+

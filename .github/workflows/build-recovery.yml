@@ -1,4 +1,4 @@
-name: Build macOS Recovery ISO image
+name: Build Recovery ISO image
 
 on:
   workflow_dispatch:

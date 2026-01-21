@@ -1,4 +1,4 @@
-name: Build macOS Installer ISO/DMG image
+name: Build Full Installer ISO/DMG image
 
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ on:
           - 'dmg'
 
 jobs:
-  build-macos-installer-image:
+  build-macos-image:
     runs-on: macos-15-intel
     timeout-minutes: 70
 

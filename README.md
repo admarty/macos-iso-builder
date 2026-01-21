@@ -7,14 +7,17 @@ A comprehensive toolkit for creating bootable macOS installer images, consisting
 
 ## Quick Start
 
-See [Usage](#usage) for detailed instructions.
+> [!Note]
+> **New users:** Before building, open [Release page](https://github.com/LongQT-sea/mkmaciso/releases) to see if someone already built what you need!
+
+See [Usage Guide](#usage-guide) for detailed instructions.
 
 ## Table of Contents
 
 - [Image Format Details](#image-format-details)
 - [Supported macOS Versions](#supported-macos-versions)
-- [Usage](#usage)
-- [Tips and Best Practices](#tips-and-best-practices)
+- [Usage Guide](#usage-guide)
+- [Usage Tips](#usage-tips)
 - [Requirements for mkmaciso](#requirements-for-mkmaciso)
 - [Acknowledgments](#acknowledgments)
 - [Legal Notice](#legal-notice)
@@ -55,9 +58,12 @@ The `mkmaciso` script can generate macOS installer images in two different forma
 
 ---
 
-## Usage
-### Method 1: GitHub workflows (for users who don't have a working macOS)
+## Usage Guide
+Two methods are available:
+- [Method 1](#method-1): Run `mkmaciso` in the cloud using GitHub Action, for users who don't have a working macOS
+- [Method 2](#method-2): Run `mkmaciso` locally, for users who already have macOS
 
+### Method 1
 **Available workflows:**
 * **Recovery ISO (Recommended)** – Lightweight recovery image (build takes ~2-5 min) • Best for virtualization
 * **Full Installer** – Complete offline installer (build takes ~10-60 min, 5-18GB) • Best for offline use
@@ -73,7 +79,7 @@ The `mkmaciso` script can generate macOS installer images in two different forma
 1. **Fork** this repository (requires a GitHub account).
 2. Navigate to the **Actions** tab in your forked repository.
 3. Click the green **"I understand my workflows, go ahead and enable them"** button.
-4. Select the **"Build macOS Installer ISO/DMG image"** or **"Build macOS Recovery ISO image"** workflow from the left sidebar.
+4. Select the **"Build Full Installer ISO/DMG image"** or **"Build Recovery ISO image"** workflow from the left sidebar.
 5. Click the **"Run workflow"** button.
 6. Configure the workflow inputs:
 
@@ -87,9 +93,11 @@ The `mkmaciso` script can generate macOS installer images in two different forma
 > [!NOTE]
 > By default, artifacts are kept for 7 days. You can change this in the workflow YAML file.
 
-### Method 2: Run `mkmaciso` locally (for users who already have macOS)
+---
 
-If you already have access to a working macOS system or macOS virtual machine, you can run the script directly:
+### Method 2
+
+If you already have access to a working macOS system or macOS virtual machine, you can run the script directly using Terminal.app:
 
 **Quick run** (replace 'tahoe' with your desired version):
 ```bash
@@ -111,7 +119,7 @@ chmod +x mkmaciso
 
 ---
 
-## Tips and Best Practices
+## Usage Tips
 
 ### For Virtual Machines (ISO Format)
 > [!NOTE]
@@ -138,7 +146,7 @@ chmod +x mkmaciso
 
 | Requirement | Details |
 |-------------|---------|
-| **OS** | Minimum macOS 10.9+ (macOS 11+ recommended) |
+| **OS** | Minimum macOS 10.9 (macOS 11+ recommended) |
 | **Architecture** | Intel (x86_64) recommended; Apple Silicon supported with limitations |
 | **Disk Space** | 20-40 GB temporary; final image varies |
 | **Internet** | Required for downloading from Apple servers |
