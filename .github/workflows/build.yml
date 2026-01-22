@@ -126,7 +126,7 @@ jobs:
             echo "*(...unless you're the kind of person who does the opposite of what they're told)*" >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
-			echo "" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
             echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
           fi
