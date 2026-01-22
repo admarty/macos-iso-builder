@@ -70,7 +70,7 @@ jobs:
           name: ${{ steps.create_image.outputs.image_name }}
           path: ./*.iso
           compression-level: 0
-          retention-days: 7
+          retention-days: 15
 
       - name: Upload DMG artifact
         if: github.event.inputs.image_format == 'dmg' && steps.create_image.outcome == 'success'
@@ -79,7 +79,7 @@ jobs:
           name: ${{ steps.create_image.outputs.image_name }}
           path: ./*.dmg.img
           compression-level: 0
-          retention-days: 7
+          retention-days: 15
 
       - name: Summary
         if: always()
@@ -92,16 +92,41 @@ jobs:
           elif [ "${{ job.status }}" == "success" ]; then
             if [ "${{ github.event.inputs.image_format }}" == "iso" ]; then
               echo "## Successfully built $(basename *.iso)" >> $GITHUB_STEP_SUMMARY
-              echo "Note: This ISO image is intended for create macOS virtual machine on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "This ISO image is intended for creating macOS virtual machines on Proxmox VE, QEMU, VMware, and VirtualBox." >> $GITHUB_STEP_SUMMARY
             else
               echo "## Successfully built $(basename *.dmg.img)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
               echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
-              echo '> This DMG image is intended for flash to USB drive using [Rufus](https://rufus.ie/en/#download) (Windows) or dd (Linux)' >> $GITHUB_STEP_SUMMARY
-              echo '> Can also be used with virtual machines (require convert to `.vhd` for Hyper-V or `.vmdk` for VMware)' >> $GITHUB_STEP_SUMMARY
+              echo '> This DMG image is intended for flashing to USB drive using [Rufus](https://rufus.ie/en/#download) (Windows) or dd (Linux).' >> $GITHUB_STEP_SUMMARY
+              echo '> Can also be used with virtual machines (requires conversion to `.vhd` for Hyper-V or `.vmdk` for VMware).' >> $GITHUB_STEP_SUMMARY
             fi
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Found this useful? [Give it a ⭐ star](https://github.com/LongQT-sea/macos-iso-builder) so others can find it too!" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>⚠️ Do NOT click this. Seriously.</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>⚠️ DO NOT CLICK. LAST WARNING.</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "<br>" >> $GITHUB_STEP_SUMMARY
+            echo "You clicked anyway. Typical.<br>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This workflow just performed mass-scale **forbidden Apple sorcery** that Cupertino pretends doesn't exist." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**What you got (for free, like a thief):**" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ A legit macOS installer" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ 3+ hours not wasted on broken torrents" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Zero shady downloads" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Something that actually works" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Whatever you do, **DO NOT** [⭐ star this repo](https://github.com/LongQT-sea/macos-iso-builder)." >> $GITHUB_STEP_SUMMARY
+            echo "![star](https://raw.githubusercontent.com/LongQT-sea/mkmaciso/main/.github/star.png)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Seriously. Don't do it. Don't help other people find this. I'm sure you won't anyway. Nobody ever does." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "*(...unless you're the kind of person who does the opposite of what they're told)*" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+			echo "" >> $GITHUB_STEP_SUMMARY
             echo "> [!TIP]" >> $GITHUB_STEP_SUMMARY
             echo "> Enable [Cloudflare WARP](https://one.one.one.one/) for faster downloads." >> $GITHUB_STEP_SUMMARY
           fi

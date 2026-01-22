@@ -44,6 +44,30 @@ jobs:
           3. Click on a successful workflow runs (green checkmark)
           4. Scroll down to **Artifacts** section to download it
           
+          <details>
+          <summary>⚠️ Do NOT click this. Seriously.</summary>
+          <details>
+          <summary>⚠️ DO NOT CLICK. LAST WARNING.</summary>
+          <br>
+          You clicked anyway. Typical.<br>
+
+          This workflow just performed mass-scale **forbidden Apple sorcery** that Cupertino pretends doesn't exist.
+
+          **What you got (for free, like a thief):**
+          - ✅ A legit macOS installer
+          - ✅ 3+ hours not wasted on broken torrents
+          - ✅ Zero shady downloads
+          - ✅ Something that actually works
+
+          Whatever you do, **DO NOT** [⭐ star this repo](https://github.com/LongQT-sea/macos-iso-builder).
+          ![star](https://raw.githubusercontent.com/LongQT-sea/mkmaciso/main/.github/star.png)
+
+          Seriously. Don't do it. Don't help other people find this. I'm sure you won't anyway. Nobody ever does.
+
+          *(...unless you're the kind of person who does the opposite of what they're told)*
+          </details>
+          </details>
+          
           ---
           
           ## Recently Active Forks
@@ -76,5 +100,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release edit forks-list --notes-file release_notes.md
-
+          gh release delete forks-list -y --cleanup-tag || true
+          gh release create forks-list --title "Recent Forks List" --notes-file release_notes.md
