@@ -8,7 +8,7 @@ This project has two parts:
 
 ## Before you start
 
-Check [Release page](https://github.com/LongQT-sea/mkmaciso/releases/tag/forks-list) first - someone might've already built what you need. If not, see [How to use](#how-to-use) to build your own.
+Check [Release page](https://github.com/LongQT-sea/mkmaciso/releases/latest) first - someone might've already built what you need. If not, see [How to use](#how-to-use) to build your own.
 
 > [!Important]
 > GitHub-hosted runners are a free public resource — please use them responsibly.
