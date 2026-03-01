@@ -144,8 +144,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          DATE_TAG=$(date -u +"%Y%m%d-%H%M%S")
+          DATE_TAG=$(date -u +"%Y%m%d")
           RELEASE_NAME="forks-list-${DATE_TAG}"
+
+          if gh release view "$RELEASE_NAME"; then
+            gh release delete "$RELEASE_NAME" -y --cleanup-tag
+            sleep 5
+          fi
 
           gh release create "$RELEASE_NAME" \
             --title "Recent Forks List (${DATE_TAG})" \
