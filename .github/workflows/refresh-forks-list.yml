@@ -7,13 +7,13 @@ on:
 jobs:
   refresh-forks:
     if: github.repository_owner == 'LongQT-sea' # Be mindful of free public resources
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write # needed to create releases
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Fetch fork data
         id: fetch_forks

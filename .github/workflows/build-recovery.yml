@@ -8,6 +8,7 @@ on:
         required: true
         type: choice
         options:
+          - ''
           - 'Tahoe'
           - 'Sequoia'
           - 'Sonoma'
@@ -24,6 +25,7 @@ on:
 
 jobs:
   build-recovery-iso:
+    if: ${{ inputs.macos_version != '' }}
     runs-on: macos-latest
     permissions:
       contents: write  # needed to create releases
@@ -147,8 +149,6 @@ jobs:
 
           echo "Compressing ISO with zip..."
           zip -j "$ZIP_FILE" "$ISO_FILE"
-
-          COMPRESSED_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
           echo "compressed_file=$ZIP_FILE" >> $GITHUB_OUTPUT
 
       - name: Upload Recovery ISO artifact

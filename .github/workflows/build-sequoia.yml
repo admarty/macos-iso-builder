@@ -8,11 +8,13 @@ on:
         required: true
         type: choice
         options:
+          - ''
           - 'iso'
           - 'dmg'
 
 jobs:
   build:
+    if: ${{ inputs.image_format != '' }}
     uses: ./.github/workflows/build-macos-template.yml
     with:
       macos_version: 'Sequoia'
