@@ -61,7 +61,7 @@ Lion, Mountain Lion, Mavericks, Yosemite, El Capitan, Sierra, High Sierra, Mojav
 > [!Tip]
 > If the run fails, just re-run the workflow.
 7. Once completed, reload the page and scroll down to the **Artifacts** section. Click the artifact link to start downloading (e.g., `macOS_Sequoia_15.7.4.iso`).
-8. Unzip the downloaded artifact and you're done.
+8. **Recovery ISO** artifacts are zipped — unzip before use.
 
 ---
 
