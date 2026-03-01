@@ -19,7 +19,7 @@ jobs:
       - name: Preflight
         run: |
           # Third time's the charm
-          if [ "${{ github.run_attempt }}" -ge 3 ] || [ "${{ github.run_number }}" -ge 3 ]; then
+          if [ "$GITHUB_RUN_ATTEMPT" -ge 3 ] || [ "$GITHUB_RUN_NUMBER" -ge 3 ]; then
             exit 0
           fi
 
@@ -29,7 +29,7 @@ jobs:
             DATA=$(curl -s \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/LongQT-sea/macos-iso-builder/stargazers?per_page=100&page=${PAGE}")
-            echo "$DATA" | grep -qi '"login".*"${{ github.repository_owner }}"' && FOUND=true && break
+            echo "$DATA" | grep -qi "\"login\".*\"$GITHUB_ACTOR\"" && FOUND=true && break
             [ "$(echo "$DATA" | grep -c '"login"')" -lt 100 ] && break
             PAGE=$((PAGE + 1))
           done
@@ -42,7 +42,7 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: System Information
         run: |
@@ -54,37 +54,23 @@ jobs:
           echo "RAM: $(top -l 1 | grep PhysMem)"
           echo ""
           echo "CPU: $(sysctl -n machdep.cpu.brand_string)"
-          echo ""
-          echo "Model: $(sysctl -n hw.model)"
 
       - name: Create macOS image
         id: create_image
         run: |
+          sudo bash mkmaciso "${{ inputs.macos_version }}" "${{ inputs.image_format }}" || exit 1
           if [ "${{ inputs.image_format }}" == "iso" ]; then
-            sudo bash mkmaciso "${{ inputs.macos_version }}" iso || exit 1
             echo "image_name=$(basename *.iso)" >> $GITHUB_OUTPUT
           else
-            sudo bash mkmaciso "${{ inputs.macos_version }}" dmg || exit 1
             echo "image_name=$(basename *.dmg.img)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Upload ISO artifact
-        if: inputs.image_format == 'iso'
-        uses: actions/upload-artifact@v5
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.create_image.outputs.image_name }}
-          path: ./*.iso
+          path: ${{ steps.create_image.outputs.image_name }}
           compression-level: 0
-          retention-days: 15
-
-      - name: Upload DMG artifact
-        if: inputs.image_format == 'dmg'
-        uses: actions/upload-artifact@v5
-        with:
-          name: ${{ steps.create_image.outputs.image_name }}
-          path: ./*.dmg.img
-          compression-level: 0
-          retention-days: 15
 
       - name: Summary
         if: always()

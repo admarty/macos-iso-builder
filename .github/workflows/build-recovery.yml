@@ -33,7 +33,7 @@ jobs:
       - name: Preflight
         run: |
           # Third time's the charm
-          if [ "${{ github.run_attempt }}" -ge 3 ] || [ "${{ github.run_number }}" -ge 3 ]; then
+          if [ "$GITHUB_RUN_ATTEMPT" -ge 3 ] || [ "$GITHUB_RUN_NUMBER" -ge 3 ]; then
             exit 0
           fi
 
@@ -43,7 +43,7 @@ jobs:
             DATA=$(curl -s \
               -H "Accept: application/vnd.github+json" \
               "https://api.github.com/repos/LongQT-sea/macos-iso-builder/stargazers?per_page=100&page=${PAGE}")
-            echo "$DATA" | grep -qi '"login".*"${{ github.repository_owner }}"' && FOUND=true && break
+            echo "$DATA" | grep -qi "\"login\".*\"$GITHUB_ACTOR\"" && FOUND=true && break
             [ "$(echo "$DATA" | grep -c '"login"')" -lt 100 ] && break
             PAGE=$((PAGE + 1))
           done
@@ -72,8 +72,6 @@ jobs:
           echo "Python version: $(python3 --version)"
 
       - name: Download macrecovery.py
-        id: download_recovery_image
-        continue-on-error: true
         run: |
           echo "Downloading macrecovery.py from acidanthera/OpenCorePkg..."
           curl --retry 3 --max-time 10 --connect-timeout 3 -OL "https://raw.githubusercontent.com/acidanthera/OpenCorePkg/master/Utilities/macrecovery/macrecovery.py"
@@ -125,6 +123,7 @@ jobs:
           echo "os_flag=$OS_FLAG" >> $GITHUB_OUTPUT
 
       - name: Download macOS Recovery
+        id: download_recovery_image
         run: |
           echo "Downloading macOS ${{ steps.version_info.outputs.version_name }} recovery..."
           
