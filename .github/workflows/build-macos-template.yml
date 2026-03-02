@@ -23,6 +23,9 @@ jobs:
             exit 0
           fi
 
+          # Most users arrive directly at the Actions tab without reading the README
+          # This ensures they have visited the README and helps with discoverability
+          # Also, make sure they check out the prebuilt image in the Recent Forks list
           FOUND=false
           PAGE=1
           while [ $PAGE -le 50 ]; do
@@ -70,6 +73,7 @@ jobs:
         with:
           path: ${{ steps.create_image.outputs.image_name }}
           compression-level: 0
+          retention-days: 15
           archive: false
 
       - name: Summary
