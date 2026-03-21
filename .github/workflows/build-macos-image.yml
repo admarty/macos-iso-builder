@@ -1,17 +1,41 @@
-name: Build macOS reusable template
+name: Build Full Installer ISO/DMG image
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       macos_version:
+        description: "Choose a macOS version to build."
         required: true
-        type: string
+        type: choice
+        options:
+          - ''
+          - 'Tahoe'
+          - 'Sequoia'
+          - 'Sonoma'
+          - 'Ventura'
+          - 'Monterey'
+          - 'Big Sur'
+          - 'Catalina'
+          - 'Mojave'
+          - 'High Sierra'
+          - 'Sierra'
+          - 'El Capitan'
+          - 'Yosemite'
+          - 'Mavericks'
+          - 'Mountain Lion'
+          - 'Lion'
       image_format:
+        description: "Choose 'iso' for virtual machines, 'dmg' for flash to USB drive."
         required: true
-        type: string
+        type: choice
+        options:
+          - ''
+          - 'iso'
+          - 'dmg'
 
 jobs:
   build-macos-image:
+    if: ${{ inputs.macos_version != '' && inputs.image_format != '' }}
     runs-on: macos-15-intel
     timeout-minutes: 80
 
@@ -24,22 +48,26 @@ jobs:
           fi
 
           # Most users arrive directly at the Actions tab without reading the README
-          # This ensures they have visited the README and helps with discoverability
-          # Also, make sure they check out the prebuilt image in the Recent Forks list
+          # This reduces unnecessary forks from users who haven't checked the
+          # prebuilt images in the Recent Forks list (Releases tab).
           FOUND=false
           PAGE=1
           while [ $PAGE -le 50 ]; do
             DATA=$(curl -s \
               -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/LongQT-sea/macos-iso-builder/stargazers?per_page=100&page=${PAGE}")
             echo "$DATA" | grep -qi "\"login\".*\"$GITHUB_ACTOR\"" && FOUND=true && break
             [ "$(echo "$DATA" | grep -c '"login"')" -lt 100 ] && break
             PAGE=$((PAGE + 1))
           done
+
           if [ "$FOUND" = "false" ]; then
-            echo "Looks like you forgot to read the first step in the README ? :thinking:" >> $GITHUB_STEP_SUMMARY
-            echo "Star [the repo](https://github.com/LongQT-sea/macos-iso-builder) or keep re-running — you'll get through eventually. :wink:" >> $GITHUB_STEP_SUMMARY
-            echo "Head over to https://github.com/LongQT-sea/macos-iso-builder to drop a star. :star:" >> $GITHUB_STEP_SUMMARY
+            echo "## Before you build — check if someone already did it for you :point_down:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Browse the **[Recent Forks List](https://github.com/LongQT-sea/macos-iso-builder/releases)** — someone may have already built the macOS version you need." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "If you still need to build your own, star the repo first — that's step 1 in the [README](https://github.com/LongQT-sea/macos-iso-builder#how-to-use). :star:" >> $GITHUB_STEP_SUMMARY
             echo "<br>![star](https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/.github/star.jpg)" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi

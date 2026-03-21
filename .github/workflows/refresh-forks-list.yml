@@ -55,9 +55,21 @@ jobs:
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/repos/$OWNER/$REPO/actions/runs?per_page=1&status=success")
 
-            RUN_TITLE=$(echo "$RUN_INFO" | jq -r '.workflow_runs[0].display_title // "N/A"')
+            RUN_ID=$(echo "$RUN_INFO" | jq -r '.workflow_runs[0].id // ""')
             RUN_URL=$(echo "$RUN_INFO" | jq -r '.workflow_runs[0].html_url // "#"')
             RUN_DATE=$(echo "$RUN_INFO" | jq -r '.workflow_runs[0].run_started_at // "" | if . != "" then .[:10] else "" end')
+
+            ARTIFACT_NAME="N/A"
+            if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+              ARTIFACT_NAME=$(curl --silent --show-error \
+                --retry 5 --retry-delay 2 --retry-max-time 60 --retry-connrefused \
+                --connect-timeout 10 --max-time 30 \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$RUN_ID/artifacts" \
+                | jq -r '.artifacts[0].name // "N/A"')
+            fi
 
             if [ "$FIRST" = false ]; then echo "," >> runs_data.json; fi
 
@@ -65,10 +77,10 @@ jobs:
               --arg owner "$OWNER" \
               --arg repo "$REPO" \
               --arg created "$CREATED" \
-              --arg run_title "$RUN_TITLE" \
+              --arg artifact_name "$ARTIFACT_NAME" \
               --arg run_url "$RUN_URL" \
               --arg run_date "$RUN_DATE" \
-              '{owner: $owner, name: $repo, created_at: $created, run_title: $run_title, run_url: $run_url, run_date: $run_date}' \
+              '{owner: $owner, name: $repo, created_at: $created, artifact_name: $artifact_name, run_url: $run_url, run_date: $run_date}' \
               >> runs_data.json
 
             FIRST=false
@@ -120,7 +132,7 @@ jobs:
           |-------------|--------------|------------|--------------|
           EOF
 
-          jq -r '.[] | "| [\(.owner)/\(.name)](https://github.com/\(.owner)/\(.name)/actions) | [\(.run_title)](\(.run_url)) | \(.run_date) | \(.created_at[:10]) |"' runs_data.json >> release_notes.md
+          jq -r '.[] | select(.artifact_name != "N/A") | "| [\(.owner)/\(.name)](https://github.com/\(.owner)/\(.name)/actions) | [\(.artifact_name)](\(.run_url)) | \(.run_date) | \(.created_at[:10]) |"' runs_data.json >> release_notes.md
 
           cat >> release_notes.md << EOF
 
