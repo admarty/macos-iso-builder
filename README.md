@@ -1,6 +1,6 @@
 # Overview
 
-Build bootable macOS installer images without needing a Mac.
+Build bootable macOS installer ISOs and DMGs directly from Apple's servers — no Mac required.
 
 This project has two parts:
 1. A script (`mkmaciso`) that uses only macOS built-in tools and commands to download and install the full macOS installer from Apple's servers into **/Applications**, and then creates bootable ISO/DMG images.
@@ -58,8 +58,6 @@ Lion, Mountain Lion, Mavericks, Yosemite, El Capitan, Sierra, High Sierra, Mojav
    * **macOS version** – Choose a version (*Sequoia*, *Sonoma*, etc.).
    * **Image format** – Choose `iso` for virtual machines or `dmg` for bootable USB drives.
 6. Click the green **"Run workflow"** button to start the build, then wait for the workflow to complete.
-> [!Tip]
-> If the run fails, just re-run the workflow.
 7. Once completed, reload the page and scroll down to the **Artifacts** section. Click the artifact link to start downloading (e.g., `macOS_Sequoia_15.7.4.iso`).
 8. **Recovery ISO** artifacts are zipped — unzip before use.
 

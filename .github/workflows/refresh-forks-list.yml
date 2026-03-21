@@ -95,9 +95,10 @@ jobs:
           cat > release_notes.md << 'EOF'
           ## How to Use This List
 
-          1. Sign in to your GitHub account https://github.com/login
-          2. Browse links in the list below to find the image you need
-          3. Scroll down to **Artifacts** section to download it
+          1. Sign in to GitHub https://github.com/login
+          2. Browse macOS ISO/DMG links in the list below
+          3. Scroll down to **Artifacts** section to download
+          > ISO for virtual machines, DMG for bootable USB drives
 
           <details>
           <summary>❌ DO NOT EXPAND — contains mass unmarketable truths</summary>
