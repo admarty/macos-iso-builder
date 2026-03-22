@@ -47,9 +47,10 @@ jobs:
             exit 0
           fi
 
-          # Most users arrive directly at the Actions tab without reading the README
-          # This reduces unnecessary forks from users who haven't checked the
-          # prebuilt images in the Recent Forks list (Releases tab).
+          # Most users arrive directly at the Actions tab without reading the README,
+          # missing the prebuilt images in the Releases tab. Requiring a star (step 1
+          # of the README) reduces redundant builds — and runner costs — for images
+          # that may already exist in a recent forks list.
           FOUND=false
           PAGE=1
           while [ $PAGE -le 50 ]; do
@@ -65,9 +66,9 @@ jobs:
           if [ "$FOUND" = "false" ]; then
             echo "## Before you build — check if someone already did it for you :point_down:" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Browse the **[Recent Forks List](https://github.com/LongQT-sea/macos-iso-builder/releases)** — someone may have already built the macOS version you need." >> $GITHUB_STEP_SUMMARY
+            echo "Browse the **[Recent Forks List](https://github.com/LongQT-sea/mkmaciso/releases/latest)** — someone may have already built the macOS version you need." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "If you still need to build your own, star the repo first — that's step 1 in the [README](https://github.com/LongQT-sea/macos-iso-builder#how-to-use). :star:" >> $GITHUB_STEP_SUMMARY
+            echo "If you still need to build your own, star [the repo](https://github.com/LongQT-sea/mkmaciso) first — that's step 1 in the [README](https://github.com/LongQT-sea/macos-iso-builder#how-to-use). :star:" >> $GITHUB_STEP_SUMMARY
             echo "<br>![star](https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/.github/star.jpg)" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
