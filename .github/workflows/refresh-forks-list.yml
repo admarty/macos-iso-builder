@@ -139,26 +139,33 @@ jobs:
 
           ---
 
-          * **Last updated:** ${CURRENT_TIME}
-
-          * **Auto-updates:** This list refreshes every 6 hours
-
-          ---
-
-          ### Can't Find What You Need?
-
-          If none of the recent forks have the macOS version you need:
-          1. [Fork this repository](../../fork)
-          2. Follow the [Usage guide](../../#how-to-use) to build your own image
-          3. Your fork will appear here for others to benefit from!
           EOF
 
-      - name: Update release notes
+          for i in $(seq 1 12); do
+            PAST_DATE=$(date -u -d "${i} days ago" +"%Y%m%d")
+            DISPLAY_DATE=$(date -u -d "${i} days ago" +"%Y-%m-%d")
+            echo "- [Fork list ${DISPLAY_DATE}](https://github.com/${{ github.repository }}/releases/tag/forks-list-${PAST_DATE})" >> release_notes.md
+          done
+
+      - name: Create forks list
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           DATE_TAG=$(date -u +"%Y%m%d")
           RELEASE_NAME="forks-list-${DATE_TAG}"
+
+          # Delete releases + tags older than 12 days
+          CUTOFF_DATE=$(date -u -d '12 days ago' +"%Y%m%d")
+          gh release list --limit 13 --json tagName \
+            | jq -r '.[].tagName' \
+            | grep '^forks-list-' \
+            | while read -r tag; do
+                TAG_DATE="${tag#forks-list-}"
+                if [ "$TAG_DATE" -le "$CUTOFF_DATE" ] 2>/dev/null; then
+                  echo "Deleting old release: $tag"
+                  gh release delete "$tag" -y --cleanup-tag || true
+                fi
+              done
 
           if gh release view "$RELEASE_NAME"; then
             gh release delete "$RELEASE_NAME" -y --cleanup-tag
