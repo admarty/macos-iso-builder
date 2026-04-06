@@ -927,7 +927,7 @@ download_modern_macos() {
         log_info "Download attempt $attempt of $download_retries..."
         if softwareupdate --fetch-full-installer --full-installer-version "$selected_version_number"; then
             log_info "Download successful!"
-            return 0
+            sleep 5 && return 0
         fi
         if [ $attempt -eq $download_retries ]; then
             log_error "Download failed after $download_retries attempts"
