@@ -154,9 +154,9 @@ jobs:
           DATE_TAG=$(date -u +"%Y%m%d")
           RELEASE_NAME="forks-list-${DATE_TAG}"
 
-          # Delete releases + tags older than 12 days
-          CUTOFF_DATE=$(date -u -d '12 days ago' +"%Y%m%d")
-          gh release list --limit 13 --json tagName \
+          # Delete releases + tags older than 13 days
+          CUTOFF_DATE=$(date -u -d '13 days ago' +"%Y%m%d")
+          gh release list --limit 14 --json tagName \
             | jq -r '.[].tagName' \
             | grep '^forks-list-' \
             | while read -r tag; do
