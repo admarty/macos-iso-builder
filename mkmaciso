@@ -908,7 +908,7 @@ download_modern_macos() {
     
     # Get latest installer version
     local selected_version_number
-    selected_version_number=$(grep -i "$version_name" "$WORK_DIR/installers.txt" | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
+    selected_version_number=$(grep -i "$version_name" "$WORK_DIR/installers.txt" | grep -iv "beta" | head -1 | sed -n 's/.*Version: \([^,]*\).*/\1/p')
     
     if [ -z "$selected_version_number" ]; then
         log_error "macOS $version_name ($version_num) is not available for download on this system"
