@@ -46,8 +46,7 @@ Lion, Mountain Lion, Mavericks, Yosemite, El Capitan, Sierra, High Sierra, Mojav
 >
 > </details>
 
-1. Star and [Fork](https://github.com/LongQT-sea/macos-iso-builder/fork) this repository (requires a GitHub account).<br>
-   <img src="https://raw.githubusercontent.com/LongQT-sea/macos-iso-builder/main/.github/star_and_fork.jpg" width="500">
+1. [Click here](https://github.com/LongQT-sea/macos-iso-builder/fork) to Fork this repository (requires a GitHub account).
 2. Navigate to the **Actions** tab in your forked repository.
 3. Click the green **"I understand my workflows, go ahead and enable them"** button.
 4. Select a workflow from the left sidebar:
