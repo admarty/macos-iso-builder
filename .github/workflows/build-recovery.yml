@@ -38,7 +38,7 @@ jobs:
         id: check
         run: |
           # Third time's the charm
-          if [ "$GITHUB_RUN_ATTEMPT" -ge 3 ]; then
+          if [ ${{ github.run_attempt }} -ge 3 ]; then
             echo "_build=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -56,7 +56,7 @@ jobs:
           done
 
           if [ "$FOUND" = "false" ]; then
-            if [ "$GITHUB_RUN_ATTEMPT" -eq 1 ]; then
+            if [ ${{ github.run_attempt }} -eq 1 ]; then
               echo "## Before you build — check if someone already did it for you :point_down:" >> $GITHUB_STEP_SUMMARY
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "Browse the **[Recent Forks List](https://github.com/LongQT-sea/macos-iso-builder)** — someone may have already built the macOS version you need." >> $GITHUB_STEP_SUMMARY
